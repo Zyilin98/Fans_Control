@@ -2,7 +2,6 @@
 #ifndef FAN_CONTROLLER_H
 #define FAN_CONTROLLER_H
 
-#pragma once
 #include <Arduino.h>
 #include "SystemState.h"
 
@@ -20,9 +19,11 @@ struct FanStatus {
 };
 
 extern FanStatus fanStatus;  // 只声明
-
-void IRAM_ATTR fanISR_A();
-void IRAM_ATTR fanISR_B();
+// 正确声明中断服务程序
+extern "C" {
+    void IRAM_ATTR fanISR_A();
+    void IRAM_ATTR fanISR_B();
+}
 void updateFanData();
 
 // 硬件配置
@@ -60,18 +61,7 @@ void checkFanStatus();
 void emergencyStop();
 
 
-// 正确声明中断服务程序
-extern "C" {
-    void IRAM_ATTR fanISR_A();
-    void IRAM_ATTR fanISR_B();
-}
-
-// 添加函数声明
-void updateFanData();
-
-
 // 在main.cpp中只需attach中断，不需要重新定义
 
-extern FanStatus fanStatus;
-inline FanStatus fanStatus;
+
 #endif

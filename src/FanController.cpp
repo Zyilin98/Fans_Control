@@ -38,8 +38,8 @@ void initFans() {
   // 初始化测速中断
   pinMode(TACH_A_PIN, INPUT_PULLUP);
   pinMode(TACH_B_PIN, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(TACH_A_PIN), tachISR_A, RISING);
-  attachInterrupt(digitalPinToInterrupt(TACH_B_PIN), tachISR_B, RISING);
+  attachInterrupt(digitalPinToInterrupt(TACH_A_PIN), fanISR_A, RISING);
+  attachInterrupt(digitalPinToInterrupt(TACH_B_PIN), fanISR_B, RISING);
 
   // 初始化ADC
   analogReadResolution(12);
