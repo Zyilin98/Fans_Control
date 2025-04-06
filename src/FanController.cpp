@@ -65,17 +65,32 @@ void setChannelB_PWM(float duty) {
 }
 
 float getVoltageA() {
-  const int samples = 10;
+  const int samples = 16;  // 增加采样数提高精度
   uint32_t sum = 0;
+
+  // 采样时改用满量程2500mV的基准
+  const float maxAdcValue = 2500.0; // mV
 
   for(int i=0; i<samples; i++){
     sum += analogRead(ADC_SENSE_PIN);
-    delayMicroseconds(100);
+    delayMicroseconds(50); // 缩短间隔时间
   }
-  float adcValue = sum / (float)samples;
-  fanStatus.voltageA = 12.0 - (adcValue * 12.0 / 4095.0);
+
+  // 转换公式：
+  // 1. 计算分压点的电压（mV）
+  float adcVoltage = (sum / (float)samples) * (maxAdcValue / 4095.0);
+
+  // 2. 计算实际电压（分压比为57:10）
+  // 分压公式: V_actual = V_adc * (R1 + R2) / R2
+  const float R1 = 47.0;  // kΩ
+  const float R2 = 10.0;  // kΩ
+  fanStatus.voltageA = adcVoltage * (R1 + R2) / R2;
+
+  // 保持电压精度到毫伏级
+  fanStatus.voltageA = roundf(fanStatus.voltageA * 1000) / 1000;
   return fanStatus.voltageA;
 }
+
 
 void updateRPM() {
   static unsigned long lastUpdate = 0;

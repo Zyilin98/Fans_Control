@@ -23,6 +23,14 @@ void setup() {
     ledcAttachPin(5, 0);
     ledcAttachPin(7, 1);
     ledcAttachPin(1, 2);
+    // ADC校准（实验用）
+    const int calibrationReads = 100;
+    uint32_t calibSum = 0;
+    for(int i=0; i<calibrationReads; i++) {
+        calibSum += analogRead(ADC_SENSE_PIN);
+    }
+    float baseVoltage = (calibSum / (float)calibrationReads) * (2.5 / 4095.0);
+    // Serial.printf("ADC Base Voltage: %.2fmV\n", baseVoltage*1000);
 
     // 确保attachInterrupt使用正确名称
     attachInterrupt(digitalPinToInterrupt(6), fanISR_A, RISING);

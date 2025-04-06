@@ -16,6 +16,6 @@ EncoderEvent getEncoderEvent();
 void handleEncoder(struct SystemState *state);
 
 // 引脚定义
-#define PIN_EC11_A  8
-#define PIN_EC11_B  10
-#define PIN_EC11_SW 9
+#define PIN_EC11_A  9
+#define PIN_EC11_B  8
+#define PIN_EC11_SW 10

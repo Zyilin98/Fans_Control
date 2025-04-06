@@ -5,7 +5,7 @@
 
 
 // 消抖参数
-#define DEBOUNCE_TIME   20    // 毫秒
+#define DEBOUNCE_TIME   50    // 毫秒
 #define LONG_PRESS_TIME 1000  // 长按判定时间
 
 // 旋转状态机
