@@ -96,6 +96,7 @@ static EncoderEvent checkButton() {
       } else if (!encoder.longPressSent &&
                 (millis() - encoder.pressStart > LONG_PRESS_TIME)) {
         encoder.longPressSent = true;
+        Serial.println("[BUTTON] Long Press");
         return EVT_LONG_PRESS;
       }
       break;
@@ -103,6 +104,7 @@ static EncoderEvent checkButton() {
     case BTN_RELEASE:
       encoder.btnState = BTN_IDLE;
       if (!encoder.longPressSent) {
+        Serial.println("[BUTTON] Short Press");
         return EVT_SHORT_PRESS;
       }
       break;
@@ -122,6 +124,7 @@ EncoderEvent getEncoderEvent() {
 void handleEncoder(SystemState *state) {
   switch(getEncoderEvent()) {
   case EVT_CW:
+    Serial.println("[ROTATION] Clockwise");
     if (state->active_channel == 0) { // 通道A
       if (state->mode_a == 0) { // DC模式
         fanStatus.targetDutyA += 5.0; // 增加5%占空比
@@ -141,6 +144,7 @@ void handleEncoder(SystemState *state) {
 
   case EVT_CCW:
     // 类似CW处理，但减少值
+      Serial.println("[ROTATION] Counter-Clockwise");
       if (state->active_channel == 0) {
         if (state->mode_a == 0) {
           fanStatus.targetDutyA -= 5.0;

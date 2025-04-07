@@ -1,20 +1,24 @@
 // DisplayManager.cpp
 #include "DisplayManager.h"
 #include <Arduino.h>
+#include <Wire.h> // 添加I2C库支持
+// 将原有的TF格式字体改为嵌入式字体
+#define FONT_NORMAL    u8g2_font_6x12_tf
+#define FONT_BOLD      u8g2_font_7x13B_tf
 
-U8G2_SSD1306_128X64_NONAME_F_4W_SW_SPI u8g2(U8G2_R0,
-                                              /* clock=*/ 4,
-                                              /* data=*/ 3,
-                                              /* cs=*/ U8X8_PIN_NONE,
-                                              /* dc=*/ U8X8_PIN_NONE,
-                                              /* reset=*/ U8X8_PIN_NONE);
-
+U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0,
+                                         /* reset=*/ U8X8_PIN_NONE,
+                                         /* 某些版本的库需要显式指定时钟频率 */
+                                         /* clock= */ 400000);
 static unsigned long lastActiveTime = 0;
 static bool errorState = false;
 static char errorMsg[32] = {0};
 
 void initDisplay() {
+  Wire.begin(8, 9); // 初始化I2C总线（SDA-pin8, SCL-pin9）
+  u8g2.setI2CAddress(0x78 * 2); // OLED的I2C地址通常是0x3C（部分模块是0x3D）
   u8g2.begin();
+  u8g2.setContrast(128);
   u8g2.setContrast(128);
   u8g2.setFont(FONT_NORMAL);
   u8g2.clearBuffer();
@@ -66,13 +70,17 @@ void updateFullDisplay(SystemState* state, float rpmA, float rpmB,
   drawFanData(rpmB, dutyB, 52);
 
   // 错误状态显示
+  // 在updateFullDisplay中添加I2C显示稳定性增强
   if(errorState) {
+    u8g2.sendBuffer(); // 增加额外的buffer发送确保显示更新
     u8g2.setDrawColor(0);
     u8g2.drawBox(0, 0, OLED_WIDTH, 13);
     u8g2.setDrawColor(1);
     u8g2.drawStr(0, 10, "ERROR:");
     u8g2.drawStr(40, 10, errorMsg);
+    u8g2.sendBuffer(); // 确保错误信息立即显示
   }
+
 
   u8g2.sendBuffer();
 }
