@@ -11,8 +11,7 @@
 // OLED配置
 #define OLED_WIDTH     128
 #define OLED_HEIGHT    64
-#define FONT_NORMAL    u8g2_font_profont12_tf
-#define FONT_BOLD      u8g2_font_profont15_tf
+
 
 void initDisplay();
 void updateFullDisplay(SystemState* state, float rpmA, float rpmB, float voltageA, float dutyA, float dutyB);

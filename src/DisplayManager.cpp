@@ -6,17 +6,13 @@
 #define FONT_NORMAL    u8g2_font_6x12_tf
 #define FONT_BOLD      u8g2_font_7x13B_tf
 
-U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0,
-                                         /* reset=*/ U8X8_PIN_NONE,
-                                         /* 某些版本的库需要显式指定时钟频率 */
-                                         /* clock= */ 400000);
+U8G2_SSD1306_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, /* clock=*/ 3, /* data=*/ 4, /* reset=*/ U8X8_PIN_NONE);    //Low spped I2C
 static unsigned long lastActiveTime = 0;
 static bool errorState = false;
 static char errorMsg[32] = {0};
 
 void initDisplay() {
-  Wire.begin(8, 9); // 初始化I2C总线（SDA-pin8, SCL-pin9）
-  u8g2.setI2CAddress(0x78 * 2); // OLED的I2C地址通常是0x3C（部分模块是0x3D）
+//  Wire.begin(); // 初始化I2C总线（SDA-pin3, SCL-pin4）
   u8g2.begin();
   u8g2.setContrast(128);
   u8g2.setContrast(128);
