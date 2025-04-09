@@ -11,7 +11,16 @@
 // OLED配置
 #define OLED_WIDTH     128
 #define OLED_HEIGHT    64
-
+// 添加开机界面显示函数声明
+void showBootScreen();
+typedef enum {
+    INIT_START,
+    ENCODER_OK,
+    FAN_CTRL_OK,
+    I2C_OK,
+    SYSTEM_READY
+} InitStatus;
+extern InitStatus status; // 移至枚举定义之后
 
 void initDisplay();
 void updateFullDisplay(SystemState* state, float rpmA, float rpmB, float voltageA, float dutyA, float dutyB);

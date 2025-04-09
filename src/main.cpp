@@ -5,14 +5,36 @@
 #include "FanController.h"
 
 SystemState sysState;
+bool isSystemReady = false; // 系统是否准备好的标志
+
 
 void setup() {
     Serial.begin(115200);
-
-    // 初始化各模块
-    initEncoder();
+    Serial.println("System started successfully");
+    // 显示初始开机界面
     initDisplay();
+    showBootScreen();
+    status = INIT_START;
+    // 初始化编码器
+    initEncoder();
+    showBootScreen(); // 更新显示
+    status = ENCODER_OK; // 设置状态为编码器初始化完成
+
+    // 初始化风扇控制
     initFans();
+    showBootScreen(); // 更新显示
+    status = FAN_CTRL_OK; // 设置状态为风扇控制初始化完成
+
+    // I2C初始化（如果需要）
+    // Wire.begin();
+    showBootScreen(); // 更新显示
+    status = I2C_OK; // 设置状态为I2C初始化完成
+
+    // 其他初始化...
+    status = SYSTEM_READY; // 最终系统就绪状态
+    showBootScreen();
+
+    isSystemReady = true;
 
     // 配置PWM参数
     ledcSetup(0, 25000, 8); // 通道0，25kHz，8位分辨率（通道A DC）
@@ -43,6 +65,12 @@ void setup() {
 }
 
 void loop() {
+        if (!isSystemReady) {
+            // 如果系统未准备好，持续显示开机界面
+            showBootScreen();
+            delay(100); // 防止频繁刷新
+            return;
+        }
     unsigned long currentMillis = millis();
     static unsigned long lastUpdate = 0; // 声明 lastUpdate 变量
     const unsigned long interval = 1000; // 声明 interval 变量，假设间隔为 1000 毫秒

@@ -2,6 +2,8 @@
 #include "DisplayManager.h"
 #include <Arduino.h>
 #include <Wire.h> // 添加I2C库支持
+#include "FanController.h" // 确保fanStatus定义可见
+InitStatus status = INIT_START;
 // 将原有的TF格式字体改为嵌入式字体
 #define FONT_NORMAL    u8g2_font_6x12_tf
 #define FONT_BOLD      u8g2_font_7x13B_tf
@@ -10,7 +12,31 @@ U8G2_SSD1306_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, /* clock=*/ 3, /* data=*/ 4, /
 static unsigned long lastActiveTime = 0;
 static bool errorState = false;
 static char errorMsg[32] = {0};
-
+// 添加开机界面显示函数
+void showBootScreen() {
+  u8g2.clearBuffer();
+  u8g2.setFont(FONT_BOLD);
+  u8g2.drawStr(20, 20, "FAN CONTROLLER");
+  switch(status) {
+  case INIT_START:
+    u8g2.drawStr(20, 35, "INITIALIZING...");
+    break;
+  case ENCODER_OK:
+    u8g2.drawStr(20, 35, "ENCODER OK");
+    break;
+  case FAN_CTRL_OK:
+    u8g2.drawStr(20, 35, "FAN CTRL OK");
+    break;
+  case I2C_OK:
+    u8g2.drawStr(20, 35, "I2C BUS OK");
+    break;
+  case SYSTEM_READY:
+    u8g2.drawStr(20, 35, "SYSTEM READY");
+    break;
+  }
+  u8g2.sendBuffer();
+  Serial.println("started UI successfully");
+}
 void initDisplay() {
 //  Wire.begin(); // 初始化I2C总线（SDA-pin3, SCL-pin4）
   u8g2.begin();
