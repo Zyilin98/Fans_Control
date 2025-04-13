@@ -1,5 +1,6 @@
 // main.cpp
 #include <Arduino.h>
+#include "SystemState.h"
 #include "EncoderHandler.h"
 #include "DisplayManager.h"
 #include "FanController.h"
@@ -65,19 +66,20 @@ void setup() {
 }
 
 void loop() {
-        if (!isSystemReady) {
+/*        if (!isSystemReady) {
             // 如果系统未准备好，持续显示开机界面
             showBootScreen();
             delay(100); // 防止频繁刷新
             return;
         }
+*/
+
     unsigned long currentMillis = millis();
     static unsigned long lastUpdate = 0; // 声明 lastUpdate 变量
-    const unsigned long interval = 1000; // 声明 interval 变量，假设间隔为 1000 毫秒
+    const unsigned long interval = 1; // 声明 interval 变量，假设间隔为 1 毫秒
 
     updateRPM();  // 需要确保在FanController.h中声明
     handleEncoder(&sysState);
-    updateRPM();  // 需要确保在FanController.h中声明
 
     if(sysState.screen_mode) {
         updateSimpleDisplay(0, fanStatus.rpmA, fanStatus.rpmB,
