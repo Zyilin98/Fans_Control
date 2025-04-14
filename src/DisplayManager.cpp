@@ -35,7 +35,6 @@ void showBootScreen() {
     break;
   }
   u8g2.sendBuffer();
-  Serial.println("started UI successfully");
 }
 void initDisplay() {
 //  Wire.begin(); // 初始化I2C总线（SDA-pin3, SCL-pin4）
