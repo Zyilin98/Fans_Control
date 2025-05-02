@@ -25,7 +25,8 @@ void PWM::init() {
 
 void PWM::setDutyCycle(uint8_t channel, float dutyPercent) {
     if(channel >= 3) return;
-
+    Serial.printf("[PWM] Ch%d SetDuty:%.1f%% GPIO%d\n",
+                 channel, dutyPercent, CHANNEL_CONFIG[channel].pin);
     // 参数约束
     dutyPercent = constrain(dutyPercent, 0.0f, 100.0f);
     dutyCycles[channel] = dutyPercent;

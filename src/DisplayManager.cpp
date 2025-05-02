@@ -68,43 +68,42 @@ void drawFanData(float rpm, float duty, uint8_t yPos) {
 }
 
 void updateFullDisplay(SystemState* state, float rpmA, float rpmB,
-                     float voltageA, float dutyA, float dutyB) {
+                     float voltageA, float dutyA, float dutyB)
+{
   u8g2.clearBuffer();
 
-  // 绘制头部
-  drawHeader(state);
+  // 头部状态
+  u8g2.setFont(FONT_BOLD);
+  u8g2.drawStr(0, 12, state->active_channel ? "Channel B" : "Channel A");
+
+  // 模式指示器
+  if(!state->active_channel) {
+    u8g2.setFont(FONT_NORMAL);
+    u8g2.drawStr(100, 12, state->mode_a ? "PWM" : "DC");
+  }
 
   // 通道A数据
   u8g2.setFont(FONT_NORMAL);
-  u8g2.drawStr(0, 28, "A:");
-  drawFanData(rpmA, dutyA, 28);
+  char buf[32];
+  snprintf(buf, sizeof(buf), "A: %04dRPM %05.1f%%",
+          (int)rpmA, dutyA);
+  u8g2.drawStr(0, 28, buf);
 
-  // 电压显示（仅通道A DC模式）
-  if(state->mode_a == 0 && !state->active_channel) {
-    char voltStr[16];
-    snprintf(voltStr, sizeof(voltStr), "VOLT:%.2fV", voltageA);
-    u8g2.drawStr(0, 40, voltStr);
+  // 电压显示（仅A通道DC模式）
+  if(state->active_channel == 0 && state->mode_a == 0) {
+    snprintf(buf, sizeof(buf), "Voltage: %5.2fV", voltageA);
+    u8g2.drawStr(0, 40, buf);
   }
 
   // 通道B数据
-  u8g2.drawStr(0, 52, "B:");
-  drawFanData(rpmB, dutyB, 52);
-
-  // 错误状态显示
-  // 在updateFullDisplay中添加I2C显示稳定性增强
-  if(errorState) {
-    u8g2.sendBuffer(); // 增加额外的buffer发送确保显示更新
-    u8g2.setDrawColor(0);
-    u8g2.drawBox(0, 0, OLED_WIDTH, 13);
-    u8g2.setDrawColor(1);
-    u8g2.drawStr(0, 10, "ERROR:");
-    u8g2.drawStr(40, 10, errorMsg);
-    u8g2.sendBuffer(); // 确保错误信息立即显示
-  }
-
+  snprintf(buf, sizeof(buf), "B: %04dRPM %05.1f%%",
+          (int)rpmB, state->duty_b);
+  u8g2.drawStr(0, 52, buf);
 
   u8g2.sendBuffer();
 }
+
+
 
 void updateSimpleDisplay(uint8_t position, float rpmA, float rpmB,
                         float dutyA, float dutyB) {

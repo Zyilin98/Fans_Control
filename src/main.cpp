@@ -2,80 +2,103 @@
 #include <Arduino.h>
 #include "SystemState.h"
 #include "EncoderHandler.h"
-//#include "DisplayManager.h"
+#include "DisplayManager.h"
 #include "FanController.h"
 #include "rpm.h"
 #include "pwm.h"
 #include "adc.h"
 
-SystemState sysState;
+// 修改main.cpp中的初始化方式（兼容C++11标准）
+SystemState sysState{};
+
+
 bool isSystemReady = false; // 系统是否准备好的标志
 const uint8_t pwmPins[] = {1, 5, 7};
 
 void setup() {
     Serial.begin(115200);
     Serial.println("System started successfully");
-    // 显示初始开机界面
-//    initDisplay();
-//    showBootScreen();
-//    status = INIT_START;
-    // 初始化编码器
+    // 显示初始化
+    initDisplay();
+    showBootScreen();
+    status = INIT_START;
+
+    // 初始化各模块
     EncoderHandler::initEncoder();
-//    showBootScreen(); // 更新显示
-//    status = ENCODER_OK; // 设置状态为编码器初始化完成
-    // 初始化风扇控制
+    status = ENCODER_OK;
+    showBootScreen();
+
     initRPM();
     PWM::init();
     adcInit(0);
-//    showBootScreen(); // 更新显示
-//    status = FAN_CTRL_OK; // 设置状态为风扇控制初始化完成
-    Serial.println("Fan Ctrl Ready!");
-    // I2C初始化（如果需要）
-    // Wire.begin();
- //   showBootScreen(); // 更新显示
-//    status = I2C_OK; // 设置状态为I2C初始化完成
-    Serial.println("I2C Ready!");
-    // 其他初始化...
- //   status = SYSTEM_READY; // 最终系统就绪状态
-//    showBootScreen();
-    Serial.println("SystemReady Ready!");
+    status = FAN_CTRL_OK;
+    showBootScreen();
+
+    status = I2C_OK;
+    showBootScreen();
+
+    status = SYSTEM_READY;
+    showBootScreen();
+
+    adcCalibrate();
+
+    // 初始化PWM通道
+    PWM::enableChannel(0);  // B通道（GP1）
+    PWM::enableChannel(1);  // A通道DC（GP5）
+    PWM::enableChannel(2);  // A通道PWM（GP7）
+
+    // 初始占空比设置
+    PWM::setDutyCycle(1, 0.0f);    // DC模式初始0%
+    PWM::setDutyCycle(2, 0.0f);  // PWM模式GP7初始100%
+
     isSystemReady = true;
-    adcCalibrate(); //校准ADC
-    Serial.println("ADC 校准完成！");
-//    float voltage = readVoltage(); //获得电压
-    PWM::enableChannel(1);    // 启用通道0
-    PWM::setDutyCycle(1, 100.0f);    // 设置通道0占空比为75%
-//    PWM::disableChannel(1);    // 禁用通道1
-    // 初始显示
 
 }
 
 void loop() {
+        static unsigned long lastDisplayUpdate = 0;
+        unsigned long currentMillis = millis();
 
-    unsigned long currentMillis = millis();
-    static unsigned long lastUpdate = 0; // 声明 lastUpdate 变量
-    const unsigned long interval = 1; // 声明 interval 变量，假设间隔为 1 毫秒
+        EncoderHandler::processEncoder();
+        updateRPM();
 
-    EncoderHandler::processEncoder();
-    // 更新 RPM 数据
-    updateRPM();
+        // 读取所有传感器数据
+        float voltageA = readVoltage();
+        unsigned long rpmA = getRPMCh1();
+        unsigned long rpmB = getRPMCh2();
 
-    // 读取当前通道的 RPM 结果（此处简化处理为周期性获取）
-    unsigned long rpm1 = getRPMCh1();
-    unsigned long rpm2 = getRPMCh2();
+        // 获取当前占空比
+        float dutyA = sysState.active_channel == 0 ?
+                     (sysState.mode_a ? sysState.duty_a_pwm : sysState.duty_a_dc) :
+                      sysState.duty_b;
+        float dutyB = sysState.duty_b;
+        // 定期更新显示
+        if (currentMillis - lastDisplayUpdate >= DISPLAY_UPDATE_INTERVAL) {
+            if(isSystemReady) {
+                // 全功能显示模式
+                updateFullDisplay(&sysState,
+                                (float)rpmA,
+                                (float)rpmB,
+                                voltageA,
+                                sysState.mode_a ? sysState.duty_a_pwm : sysState.duty_a_dc,
+                                sysState.duty_b);
+            } else {
+                // 系统未就绪时显示启动界面
+                showBootScreen();
+            }
+            lastDisplayUpdate = currentMillis;
+        }
+        // 处理屏幕模式切换
+        handleScreenMode(&sysState);
 
-    Serial.print("通道1 RPM: ");
-    Serial.println(rpm1);
-
-    Serial.print("通道2 RPM: ");
-    Serial.println(rpm2);
-    float voltage = readVoltage();
-    Serial.print("电池电压 (V) = ");
-    Serial.println(voltage, 2);
-/*    static unsigned long lastDisplayUpdate = 0;
-    if(millis() - lastDisplayUpdate >= DISPLAY_UPDATE_INTERVAL) {
-        // 更新显示代码
-        lastDisplayUpdate = millis();
-    }
- */
+        // 调试输出
+        static unsigned long lastSerialOutput = 0;
+        if (currentMillis - lastSerialOutput >= 1000) {
+            Serial.printf("[A] Mode:%s DC:%.1f%% PWM:%.1f%% [B] PWM:%.1f%%\n",
+                         sysState.mode_a ? "PWM" : "DC",
+                         sysState.duty_a_dc,
+                         sysState.duty_a_pwm,
+                         sysState.duty_b);
+            lastSerialOutput = currentMillis;
+        }
 }
