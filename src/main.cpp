@@ -1,104 +1,74 @@
-// main.cpp
 #include <Arduino.h>
-#include "SystemState.h"
-#include "EncoderHandler.h"
-#include "DisplayManager.h"
-#include "FanController.h"
-#include "rpm.h"
+#include "config.h"
+#include "tach.h"
+#include "display.h"
 #include "pwm.h"
 #include "adc.h"
-
-// 修改main.cpp中的初始化方式（兼容C++11标准）
-SystemState sysState{};
-
-
-bool isSystemReady = false; // 系统是否准备好的标志
-const uint8_t pwmPins[] = {1, 5, 7};
+#include "encoder.h"
+#include "uart.h"
 
 void setup() {
-    Serial.begin(115200);
-    Serial.println("System started successfully");
-    // 显示初始化
-    initDisplay();
-    showBootScreen();
-    status = INIT_START;
+    // 初始化串口
+    uartInit();
+    
+    // 初始化ADC
+    adcInit();
 
-    // 初始化各模块
-    EncoderHandler::initEncoder();
-    status = ENCODER_OK;
-    showBootScreen();
-
-    initRPM();
-    PWM::init();
-    adcInit(0);
-    status = FAN_CTRL_OK;
-    showBootScreen();
-
-    status = I2C_OK;
-    showBootScreen();
-
-    status = SYSTEM_READY;
-    showBootScreen();
-
-    adcCalibrate();
-
-    // 初始化PWM通道
-    PWM::enableChannel(0);  // B通道（GP1）
-    PWM::enableChannel(1);  // A通道DC（GP5）
-    PWM::enableChannel(2);  // A通道PWM（GP7）
-
-    // 初始占空比设置
-    PWM::setDutyCycle(1, 0.0f);    // DC模式初始0%
-    PWM::setDutyCycle(2, 0.0f);  // PWM模式GP7初始100%
-
-    isSystemReady = true;
-
+    // 初始化显示模块
+    if (!displayInit()) {
+        Serial.println("显示模块初始化失败");
+        while(1);
+    }
+    
+    // 初始化旋转编码器
+    encoderInit();
+    
+    // 初始化转速检测
+    tachInit();
+    
+    // 初始化PWM
+    if (!pwmInit()) {
+        Serial.println("PWM初始化失败");
+        while(1);
+    }
+    
+    lastActivity = millis();
+    Serial.println("系统就绪，等待操作...");
+    Serial.println("======================");
 }
 
 void loop() {
-        static unsigned long lastDisplayUpdate = 0;
-        unsigned long currentMillis = millis();
-
-        EncoderHandler::processEncoder();
-        updateRPM();
-
-        // 读取所有传感器数据
-        float voltageA = readVoltage();
-        unsigned long rpmA = getRPMCh1();
-        unsigned long rpmB = getRPMCh2();
-
-        // 获取当前占空比
-        float dutyA = sysState.active_channel == 0 ?
-                     (sysState.mode_a ? sysState.duty_a_pwm : sysState.duty_a_dc) :
-                      sysState.duty_b;
-        float dutyB = sysState.duty_b;
-        // 定期更新显示
-        if (currentMillis - lastDisplayUpdate >= DISPLAY_UPDATE_INTERVAL) {
-            if(isSystemReady) {
-                // 全功能显示模式
-                updateFullDisplay(&sysState,
-                                (float)rpmA,
-                                (float)rpmB,
-                                voltageA,
-                                sysState.mode_a ? sysState.duty_a_pwm : sysState.duty_a_dc,
-                                sysState.duty_b);
-            } else {
-                // 系统未就绪时显示启动界面
-                showBootScreen();
-            }
-            lastDisplayUpdate = currentMillis;
+    uint32_t now = millis();
+    
+    // 每秒计算一次RPM
+    static uint32_t lastPrint = 0;
+    if (now - lastPrint >= 1000) {
+        lastPrint = now;
+        
+        // 计算RPM
+        calculateRPM();
+        
+        if (displayOn) {
+            wakeAndRefresh(currentRPM_A, currentRPM_B);
         }
-        // 处理屏幕模式切换
-        handleScreenMode(&sysState);
+    }
+    
+    // 处理编码器事件
+    checkEncoder();
+    
+    // 处理串口输入
+    handleSerialInput();
+    
+    // 检测旋转结束
+    checkRotationStatus(now);
 
-        // 调试输出
-        static unsigned long lastSerialOutput = 0;
-        if (currentMillis - lastSerialOutput >= 1000) {
-            Serial.printf("[A] Mode:%s DC:%.1f%% PWM:%.1f%% [B] PWM:%.1f%%\n",
-                         sysState.mode_a ? "PWM" : "DC",
-                         sysState.duty_a_dc,
-                         sysState.duty_a_pwm,
-                         sysState.duty_b);
-            lastSerialOutput = currentMillis;
-        }
+    // 更新PWM输出
+    updatePWMOutputs();
+
+    // 更新电压读数
+    updateVoltageReading();
+    
+    // OLED屏幕超时关闭
+    checkDisplayTimeout(now);
 }
+
