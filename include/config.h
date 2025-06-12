@@ -10,7 +10,7 @@
 #define ADC_REF_VOLTAGE 2500.0  // ESP32-C3 ADC 满量程电压
 
 // 电压分压比例
-const float VOLTAGE_DIVIDER_RATIO = 5.47;  // (47k + 10k) / 10k
+const float VOLTAGE_DIVIDER_RATIO = 6.00;  // (47k + 10k) / 10k
 
 // I2C引脚
 #define I2C_SDA_PIN 3
