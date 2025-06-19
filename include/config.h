@@ -47,6 +47,10 @@ extern volatile uint32_t pulseCountA;  // A通道脉冲计数
 extern volatile uint32_t pulseCountB;  // B通道脉冲计数
 extern volatile int pwmDuty_A;           // PWM占空比A
 extern volatile int pwmDuty_B;             // PWM占空比B
+extern int Naturewind; //自然风状态
+extern uint32_t natureWindStartTime;
+extern float natureWindPhase;  // 正弦波相位（0-2π）
+
 extern uint32_t lastActivity;
 extern int currentChannel;
 extern bool displayOn;

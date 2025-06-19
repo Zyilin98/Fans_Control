@@ -6,6 +6,12 @@
 #include "adc.h"
 #include "encoder.h"
 #include "uart.h"
+#include "display.h"
+
+void natureWindCycle(unsigned long period = 25000, int maxVal = 65, int minVal = 20);
+uint32_t natureWindStartTime = 0;
+float natureWindPhase = 0.0;
+
 
 void setup() {
     // 初始化串口
@@ -67,8 +73,38 @@ void loop() {
 
     // 更新电压读数
     updateVoltageReading();
-    
+
+    //自然风模式
+    natureWindCycle();
+
     // OLED屏幕超时关闭
     checkDisplayTimeout(now);
 }
 
+void natureWindCycle(unsigned long period,int maxVal,int minVal) {
+    if (!Naturewind) {
+        return;
+    }
+
+    // 首次进入时初始化
+    if (natureWindStartTime == 0) {
+        natureWindStartTime = millis();
+        natureWindPhase = 0.0;
+        Serial.println("[Debug] 自然风模式");
+    }
+
+    // 计算经过的时间比例 (0.0 - 1.0)
+    float elapsedRatio = (millis() - natureWindStartTime) / (float)period;
+
+    // 更新相位（确保在0-2π范围内）
+    natureWindPhase = TWO_PI * fmod(elapsedRatio, 1.0);
+
+    // 计算正弦波值并更新PWM
+    float sinValue = sin(natureWindPhase);
+    pwmDuty_A = minVal + (maxVal - minVal) * (0.5 + 0.5 * sinValue);  // 映射到minVal-maxVal范围
+
+    // 周期结束后重置计时
+    if (elapsedRatio >= 1.0) {
+        natureWindStartTime = millis();
+    }
+}

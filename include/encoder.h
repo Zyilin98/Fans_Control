@@ -13,7 +13,7 @@ void checkEncoder();
 // 处理编码器事件
 void handleRotate(int8_t rotation);
 void handleLongPressRelease();
-
+void handlePressRelease();
 // 检查编码器状态
 void checkEncoder();
 
