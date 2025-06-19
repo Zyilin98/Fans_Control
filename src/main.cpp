@@ -8,7 +8,7 @@
 #include "uart.h"
 #include "display.h"
 
-void natureWindCycle(unsigned long period = 25000, int maxVal = 65, int minVal = 20);
+void natureWindCycle(unsigned long period = 15000, int maxVal = 80, int minVal = 20);
 uint32_t natureWindStartTime = 0;
 float natureWindPhase = 0.0;
 

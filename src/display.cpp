@@ -62,7 +62,12 @@ void wakeAndRefresh(float rpmA, float rpmB) {
         display.setCursor(56, 42);
         display.printf("%2d", pwmDuty_B);
     }
-
+    //显示模式
+    if (Naturewind) {
+        display.setTextSize(1);
+        display.setCursor(SCREEN_WIDTH - 12, 2);  // 右上角位置
+        display.print("N");
+    }
     //显示ADC电压
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
