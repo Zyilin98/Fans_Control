@@ -1,7 +1,7 @@
 #include "adc.h"
 
 // 全局变量定义
-float measuredVoltage = 7.0;
+float measuredVoltage = 0.0;
 
 // 初始化ADC模块
 void adcInit() {

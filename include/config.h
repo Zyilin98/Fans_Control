@@ -10,7 +10,7 @@
 #define ADC_REF_VOLTAGE 2500.0  // ESP32-C3 ADC 满量程电压
 
 // 电压分压比例
-const float VOLTAGE_DIVIDER_RATIO = 6.00;  // (47k + 10k) / 10k
+const float VOLTAGE_DIVIDER_RATIO = 7.00;  // (47k + 10k) / 10k
 
 // I2C引脚
 #define I2C_SDA_PIN 3
@@ -35,7 +35,7 @@ const float VOLTAGE_DIVIDER_RATIO = 6.00;  // (47k + 10k) / 10k
 
 // PWM配置
 const uint32_t PWM_FREQ_1 = 25000;
-const uint32_t PWM_FREQ_2 = 120000;
+const uint32_t PWM_FREQ_2 = 125000;
 const uint8_t PULSES_PER_REV = 2;
 
 // 超时配置
