@@ -7,7 +7,12 @@
 void adcInit();
 
 // 更新电压读数
-void updateVoltageReading();
+void VoltageRead();
+
+void VoltageRawRead();
+
+// ADC校准
+void calibrateADC();
 
 #endif // ADC_H
 

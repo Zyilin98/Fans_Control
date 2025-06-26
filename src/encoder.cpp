@@ -42,7 +42,7 @@ void handleRotate(int8_t rotation) {
 
 
 void handleLongPressRelease() {
-    Serial.println("[Debug] Long press released");
+    Serial.println("[Debug] 切换通道");
     currentChannel ^= 1;
 
 }

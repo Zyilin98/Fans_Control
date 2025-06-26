@@ -31,7 +31,10 @@ void setup() {
         Serial.println("PWM初始化失败");
         while(1);
     }
-    
+    // ADC校准
+    //calibrateADC();
+
+    // 显示欢迎信息
     lastActivity = millis();
     Serial.println("系统就绪，等待操作...");
     Serial.println("======================");
@@ -66,9 +69,22 @@ void loop() {
     updatePWMOutputs();
 
     // 更新电压读数
-    updateVoltageReading();
+    VoltageRead();
+
+    VoltageRawRead();
+    // 新增1500ms定时器
+    static uint32_t lastPrintAA = 0;
+    if (now - lastPrintAA >= 2000) {
+        lastPrintAA = now;
+        // 串口输出双通道数据
+        Serial.printf("[DEBUG] 脉冲计数 - A: %d, B: %d\n");
+        Serial.printf(
+            "[DEBUG] A_RPM: %.0f, B_RPM: %.0f, PWMA: %d%%\nPWMB: %d%%,校准电压: %.0f,原始电压: %.0f,ADC校准电压: %0.lu,ADC原始数据: %0.lu\n",
+                     currentRPM_A, currentRPM_B, pwmDuty_A, pwmDuty_B, measuredVoltage, measuredVoltageRaw,ReadMilliVolts, ReadRawVolts);
+    }
     
     // OLED屏幕超时关闭
     checkDisplayTimeout(now);
+
 }
 

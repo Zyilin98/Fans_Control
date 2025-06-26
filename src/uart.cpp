@@ -6,7 +6,7 @@
 void uartInit() {
     Serial.begin(115200);
     Serial.println("系统启动...");
-    Serial.println("双通道风扇转速监控系统");
+    Serial.println("双通道风扇调试监控");
     Serial.println("----------------------");
 }
 

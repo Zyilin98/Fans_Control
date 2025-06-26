@@ -39,10 +39,6 @@ void calculateRPM() {
     // 计算双通道RPM
     currentRPM_A = cntA * 60.0f / PULSES_PER_REV;
     currentRPM_B = cntB * 60.0f / PULSES_PER_REV;
-    
-    // 串口输出双通道数据
-    Serial.printf("[DEBUG] 脉冲计数 - A: %d, B: %d\n", cntA, cntB);
-    Serial.printf("A_RPM: %.0f, B_RPM: %.0f, PWMA: %d%%\n,PWMB: %d%%\n",
-                 currentRPM_A, currentRPM_B, pwmDuty_A, pwmDuty_B);
+
 }
 

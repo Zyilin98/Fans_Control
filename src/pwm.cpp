@@ -5,7 +5,7 @@ volatile int pwmDuty_A = 0;  // PWM占空比
 volatile int pwmDuty_B = 0;  // PWM占空比
 // 初始化PWM模块
 bool pwmInit() {
-    // PWM初始化 - 适配PlatformIO环境
+    // PWM初始化
     // 使用ledcSetup和ledcAttachPin替代ledcAttach
     
     // 设置PWM通道1

@@ -10,7 +10,7 @@
 #define ADC_REF_VOLTAGE 2500.0  // ESP32-C3 ADC 满量程电压
 
 // 电压分压比例
-const float VOLTAGE_DIVIDER_RATIO = 7.00;  // (47k + 10k) / 10k
+constexpr float VOLTAGE_DIVIDER_RATIO = 5.70;  // (47k + 10k) / 10k
 
 // I2C引脚
 #define I2C_SDA_PIN 3
@@ -34,13 +34,13 @@ const float VOLTAGE_DIVIDER_RATIO = 7.00;  // (47k + 10k) / 10k
 #define PIN_FAN_PWM2 7     // 同步PWM输出
 
 // PWM配置
-const uint32_t PWM_FREQ_1 = 25000;
-const uint32_t PWM_FREQ_2 = 125000;
-const uint8_t PULSES_PER_REV = 2;
+constexpr uint32_t PWM_FREQ_1 = 25000;
+constexpr uint32_t PWM_FREQ_2 = 125000;
+constexpr uint8_t PULSES_PER_REV = 2;
 
 // 超时配置
-const uint32_t DISPLAY_TIMEOUT_MS = 30000;  // 显示超时时间（毫秒）
-const uint32_t ROTATION_TIMEOUT_MS = 300;   // 旋转超时时间（毫秒）
+constexpr uint32_t DISPLAY_TIMEOUT_MS = 30000;  // 显示超时时间（毫秒）
+constexpr uint32_t ROTATION_TIMEOUT_MS = 300;   // 旋转超时时间（毫秒）
 
 // 全局状态变量声明（在各模块中定义）
 extern volatile uint32_t pulseCountA;  // A通道脉冲计数
@@ -55,6 +55,9 @@ extern float currentRPM_B;    // B通道转速
 extern bool isRotating;       // 旋转状态标志
 extern uint32_t rotationStartTime;  // 旋转开始时间
 extern float measuredVoltage;
+extern float measuredVoltageRaw;
+extern uint32_t ReadMilliVolts;
+extern uint32_t ReadRawVolts;
 
 
 #endif // CONFIG_H
