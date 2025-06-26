@@ -1,10 +1,12 @@
 #include "encoder.h"
 #include "pwm.h"
 #include "display.h"
+#include "config.h"
 
 // 全局变量定义
 bool isRotating = false;     // 旋转状态标志
 int currentChannel = 0;
+int Naturewind = 0;
 uint32_t rotationStartTime = 0;  // 旋转开始时间
 
 // 创建旋转编码器对象
@@ -40,19 +42,22 @@ void handleRotate(int8_t rotation) {
     wakeAndRefresh(currentRPM_A, currentRPM_B);
 }
 
-
-void handleLongPressRelease() {
+void handlePressRelease() {
     Serial.println("[Debug] 切换通道");
     currentChannel ^= 1;
 
 }
-
+void handleLongPressRelease() {
+    Serial.println("[Debug] 切换自然风");
+    Naturewind ^= 1;
+}
 // 初始化旋转编码器模块
 void encoderInit() {
     // 初始化旋转编码器
     encoder = new Versatile_RotaryEncoder(PIN_ENC_CLK, PIN_ENC_DT, PIN_ENC_SW);
     encoder->setHandleRotate(handleRotate);
     encoder->setHandleLongPressRelease(handleLongPressRelease);
+    encoder->setHandlePressRelease(handlePressRelease);
     Serial.println("编码器初始化完成");
 }
 
