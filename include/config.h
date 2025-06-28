@@ -62,7 +62,7 @@ extern float measuredVoltage;
 extern float measuredVoltageRaw;
 extern uint32_t ReadMilliVolts;
 extern uint32_t ReadRawVolts;
-
+extern int nowifi;
 
 #endif // CONFIG_H
 

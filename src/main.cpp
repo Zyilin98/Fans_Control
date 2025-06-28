@@ -7,11 +7,14 @@
 #include "encoder.h"
 #include "uart.h"
 #include "display.h"
+#include "WiFiManager.h"
+#include "../include/http_server.h"
 
 void natureWindCycle(unsigned long period = 15000, int maxVal = 80, int minVal = 20);
 uint32_t natureWindStartTime = 0;
 float natureWindPhase = 0.0;
-
+int nowifi = 1;
+WiFiManager wm;
 
 void setup() {
     // 初始化串口
@@ -39,6 +42,22 @@ void setup() {
     }
     // ADC校准
     //calibrateADC();
+    // 初始化WiFi
+    Serial.println("正在连接WiFi...");
+    wm.setConfigPortalTimeout(300);
+    // 自动连接，若未保存过 WiFi 信息则进入配网模式
+    bool res = wm.autoConnect("EspFansControl"); // 可自定义AP名
+
+    if (!res) {
+        Serial.println("WiFiManager: 配网失败或超时，重启设备再试一次...");
+        delay(1000);
+        ESP.restart();
+        delay(2000); // 等待重启
+    } else {
+        Serial.println("WiFiManager: 已连接到WiFi，网络信息已保存。");
+        nowifi = 0; // 已连接网络
+        setupServer();
+    }
 
     // 显示欢迎信息
     lastActivity = millis();
@@ -48,7 +67,8 @@ void setup() {
 
 void loop() {
     uint32_t now = millis();
-    
+
+
     // 每秒计算一次RPM
     static uint32_t lastPrint = 0;
     if (now - lastPrint >= 1000) {
@@ -56,6 +76,13 @@ void loop() {
         
         // 计算RPM
         calculateRPM();
+
+        // 检查WiFi状态
+        if (WiFi.status() != WL_CONNECTED) {
+            nowifi = 1; // 断网或无网络
+        } else {
+            nowifi = 0; // 网络正常
+        }
         
         if (displayOn) {
             wakeAndRefresh(currentRPM_A, currentRPM_B);
@@ -79,8 +106,6 @@ void loop() {
     VoltageRead();
 
     VoltageRawRead();
-  
-    updateVoltageReading();
 
     //自然风模式
     natureWindCycle();
@@ -90,12 +115,12 @@ void loop() {
     if (now - lastPrintAA >= 2000) {
         lastPrintAA = now;
         // 串口输出双通道数据
-        Serial.printf("[DEBUG] 脉冲计数 - A: %d, B: %d\n");
+        //Serial.printf("[DEBUG] 脉冲计数 - A: %%, B: %%\n");
         Serial.printf(
-            "[DEBUG] A_RPM: %.0f, B_RPM: %.0f, PWMA: %d%%\nPWMB: %d%%,校准电压: %.0f,原始电压: %.0f,ADC校准电压: %0.lu,ADC原始数据: %0.lu\n",
+            "[DEBUG] A_RPM: %.0f, B_RPM: %.0f, PWMA: %d%%, PWMB: %d%%\n,校准电压: %.0fmV,原始电压: %.0fmV,ADC校准电压: %0.lumV,ADC原始数据: %0.lumV\n",
                      currentRPM_A, currentRPM_B, pwmDuty_A, pwmDuty_B, measuredVoltage, measuredVoltageRaw,ReadMilliVolts, ReadRawVolts);
     }
-  
+    server.handleClient();
     // OLED屏幕超时关闭
     checkDisplayTimeout(now);
 

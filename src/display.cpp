@@ -68,6 +68,12 @@ void wakeAndRefresh(float rpmA, float rpmB) {
         display.setCursor(SCREEN_WIDTH - 12, 2);  // 右上角位置
         display.print("N");
     }
+    //显示wifi状态
+    if (nowifi == 0) {
+        display.setTextSize(1);
+        display.setCursor(2, 56);  //左下角位置
+        display.print("Wifi");
+    }
     //显示ADC电压
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
