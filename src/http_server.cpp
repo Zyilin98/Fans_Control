@@ -1,7 +1,7 @@
 #include "http_server.h"
 #include "config.h"
 #include "pwm.h"
-WebServer server(8080);
+WebServer server(80);
 
 int getChannelSpeed(int channel) {
     return (channel == 1) ? currentRPM_A : currentRPM_B;
@@ -11,11 +11,57 @@ float getCurrentVoltage() {
     return measuredVoltage;
 }
 
+unsigned long lastHeartbeat = 0;
+bool clientConnected = false;
+
+// 处理客户端断开连接
+void handleHeartbeat() {
+    lastHeartbeat = millis();
+    clientConnected = true;
+    server.send(200, "text/plain", "alive");
+}
+
+void handleWifiInfo() {
+    String json = "{";
+    json += "\"ssid\":\"" + WiFi.SSID() + "\",";
+    json += "\"ip\":\"" + WiFi.localIP().toString() + "\",";
+    json += "\"rssi\":" + String(WiFi.RSSI());
+    json += "}";
+    server.send(200, "application/json", json);
+}
+
 // 处理根路径请求，返回 HTML 页面
 void handleRoot() {
     String html = R"(<html><head>
         <meta charset='UTF-8'>
         <script>
+            let missedBeats = 0;
+            function checkHeartbeat() {
+                fetch('/heartbeat')
+                .then(() => {
+                missedBeats = 0;
+                document.getElementById('connection-status').style.background = '#4CAF50';
+                document.getElementById('connection-status').textContent = '连接状态: 已连接';
+                })
+                .catch(() => {
+                if(++missedBeats >= 5) {
+                    document.getElementById('connection-status').style.background = '#f44336';
+                    document.getElementById('connection-status').textContent = '连接状态: 未连接';
+                }
+                });
+            }
+            setInterval(checkHeartbeat, 1000);
+            function updateWifiInfo() {
+                fetch('/wifi_info')
+                .then(r => r.json())
+                .then(data => {
+                document.getElementById('wifi-ssid').textContent = data.ssid;
+                document.getElementById('wifi-ip').textContent = data.ip;
+                document.getElementById('wifi-rssi').textContent = data.rssi;
+                 });
+             }
+            setInterval(updateWifiInfo, 3000);
+            updateWifiInfo();
             function updateData() {
                 // 更新通道占空比
                 fetch('/duty_cycle').then(r => r.json()).then(data => {
@@ -65,6 +111,19 @@ void handleRoot() {
     html += "<p>自然风模式：<button id='natural-wind-btn' onclick=\"location.href='/natural_wind'\">";
     html += (Naturewind ? "关闭" : "开启");
     html += "</button></p>";
+
+    html += "<h2>WiFi信息</h2>";
+    html += "<div id='wifi-info'>";
+    html += "SSID: <span id='wifi-ssid'>获取中...</span><br>";
+    html += "IP地址: <span id='wifi-ip'>获取中...</span><br>";
+    html += "信号强度: <span id='wifi-rssi'>获取中...</span> dBm";
+    html += "</div>";
+
+    html += "<div id='connection-status' style='position: fixed; top: 10px; right: 10px; padding: 5px; background: ";
+    html += (clientConnected ? "#4CAF50" : "#f44336");
+    html += "; color: white;'>连接状态: ";
+    html += (clientConnected ? "已连接" : "未连接");
+    html += "</div>";
 
     html += "</body></html>";
     server.send(200, "text/html; charset=utf-8", html);
@@ -122,7 +181,9 @@ void setupServer() {
     server.on("/speed", handleSpeed);
     server.on("/voltage", handleVoltage);
     server.on("/natural_wind", handleNaturalWind);
-    server.on("/natural_wind_status", handleNaturalWindStatus); // 新增状态查询
+    server.on("/natural_wind_status", handleNaturalWindStatus); // 状态查询
+    server.on("/heartbeat", handleHeartbeat);
+    server.on("/wifi_info", handleWifiInfo);
     server.begin();
     Serial.println("HTTP 服务器已启动");
 }

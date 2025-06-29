@@ -14,5 +14,7 @@ void handleVoltage();
 void handleNaturalWind();
 void handleNaturalWindStatus();
 void handleDutyCycle();
+void handleHeartbeat();
+void handleWifiInfo();
 
 #endif

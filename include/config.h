@@ -63,6 +63,8 @@ extern float measuredVoltageRaw;
 extern uint32_t ReadMilliVolts;
 extern uint32_t ReadRawVolts;
 extern int nowifi;
+extern unsigned long lastHeartbeat;
+extern bool clientConnected;
 
 #endif // CONFIG_H
 
