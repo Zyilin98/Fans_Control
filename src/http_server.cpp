@@ -67,6 +67,7 @@ void handleRoot() {
                 fetch('/duty_cycle').then(r => r.json()).then(data => {
                     document.getElementById('duty1').textContent = data.ch1;
                     document.getElementById('duty2').textContent = data.ch2;
+                    document.getElementById('duty3').textContent = data.ch3;
                 });
                 // 更新转速数据
                 fetch('/speed').then(r => r.json()).then(data => {
@@ -97,6 +98,8 @@ void handleRoot() {
     html += "<input type='number' name='ch1' min='0' max='100'><br>";
     html += "通道 2 占空比: <span id='duty2'>" + String(pwmDuty_B) + "</span>% ";
     html += "<input type='number' name='ch2' min='0' max='100'><br>";
+    html += "通道 3 占空比: <span id='duty3'>" + String(pwmDuty_C) + "</span>% ";
+    html += "<input type='number' name='ch3' min='0' max='100'><br>";
     html += "<input type='submit' value='设置'>";
     html += "</form>";
 
@@ -134,12 +137,17 @@ void handleChannelDutyCycle() {
     if (server.hasArg("ch1")) {
         int ch1Duty = server.arg("ch1").toInt();
         pwmDuty_A = constrain(ch1Duty, 0, 100);
-        setPWMDuty(pwmDuty_A);
+        updatePWMOutputs(); // 使用统一的更新函数
     }
     if (server.hasArg("ch2")) {
         int ch2Duty = server.arg("ch2").toInt();
         pwmDuty_B = constrain(ch2Duty, 0, 100);
-        ledcWrite(2, pwmDuty_B * 255 / 100); // 直接控制通道2
+        updatePWMOutputs(); // 使用统一的更新函数
+    }
+    if (server.hasArg("ch3")) {
+        int ch3Duty = server.arg("ch3").toInt();
+        pwmDuty_C = constrain(ch3Duty, 0, 100);
+        updatePWMOutputs(); // 使用统一的更新函数
     }
     server.sendHeader("Location", "/", true);
     server.send(302, "text/plain", "");
@@ -169,7 +177,7 @@ void handleNaturalWindStatus() {
 }
 
 void handleDutyCycle() {
-    String response = "{\"ch1\": " + String(pwmDuty_A) + ", \"ch2\": " + String(pwmDuty_B) + "}";
+    String response = "{\"ch1\": " + String(pwmDuty_A) + ", \"ch2\": " + String(pwmDuty_B) + ", \"ch3\": " + String(pwmDuty_C) + "}";
     server.send(200, "application/json", response);
 }
 

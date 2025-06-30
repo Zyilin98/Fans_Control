@@ -8,6 +8,8 @@ bool isRotating = false;     // 旋转状态标志
 int currentChannel = 0;
 int Naturewind = 0;
 uint32_t rotationStartTime = 0;  // 旋转开始时间
+volatile int* pwmDuties[3] = {&pwmDuty_A, &pwmDuty_B, &pwmDuty_C};// 指向PWM值的指针数组
+
 
 // 创建旋转编码器对象
 Versatile_RotaryEncoder *encoder;
@@ -20,15 +22,9 @@ void handleRotate(int8_t rotation) {
     }
 
     // 根据当前通道调整对应的PWM值
-    if (currentChannel == 0) { // 通道A
-        int newDuty = pwmDuty_A + ((rotation > 0) ? 5 : -5);
-        newDuty = constrain(newDuty, 0, 100);
-        pwmDuty_A = newDuty;
-    } else { // 通道B
-        int newDuty = pwmDuty_B + ((rotation > 0) ? 5 : -5);
-        newDuty = constrain(newDuty, 0, 100);
-        pwmDuty_B = newDuty;
-    }
+    volatile int* currentDuty = pwmDuties[currentChannel];
+    int newDuty = *currentDuty + ((rotation > 0) ? 5 : -5);
+    *currentDuty = constrain(newDuty, 0, 100);
     
     lastActivity = millis();
     
@@ -44,7 +40,10 @@ void handleRotate(int8_t rotation) {
 
 void handlePressRelease() {
     Serial.println("[Debug] 切换通道");
-    currentChannel ^= 1;
+    currentChannel += 1;
+    if (currentChannel > 2) {
+        currentChannel = 0;
+    }
 
 }
 void handleLongPressRelease() {

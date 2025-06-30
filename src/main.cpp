@@ -17,6 +17,7 @@ int nowifi = 1;
 WiFiManager wm;
 
 void setup() {
+
     // 初始化串口
     uartInit();
     
@@ -40,8 +41,11 @@ void setup() {
         Serial.println("PWM初始化失败");
         while(1);
     }
+
     // ADC校准
     //calibrateADC();
+
+
     // 初始化WiFi
     Serial.println("正在连接WiFi...");
     wm.setConfigPortalTimeout(300);
@@ -63,6 +67,7 @@ void setup() {
     lastActivity = millis();
     Serial.println("系统就绪，等待操作...");
     Serial.println("======================");
+
 }
 
 void loop() {
@@ -83,7 +88,12 @@ void loop() {
         } else {
             nowifi = 0; // 网络正常
         }
-        
+
+        // 打印调试信息
+        Serial.printf(
+            "[DEBUG] A_RPM: %.0f, B_RPM: %.0f, PWMA: %d%%, PWMB: %d%%\n,校准电压: %.0fmV,原始电压: %.0fmV,ADC校准电压: %0.lumV,ADC原始数据: %0.lumV\n",
+                     currentRPM_A, currentRPM_B, pwmDuty_A, pwmDuty_B, measuredVoltage, measuredVoltageRaw,ReadMilliVolts, ReadRawVolts);
+
         if (displayOn) {
             wakeAndRefresh(currentRPM_A, currentRPM_B);
         }
@@ -109,18 +119,10 @@ void loop() {
 
     //自然风模式
     natureWindCycle();
-  
-    // 新增1500ms定时器
-    static uint32_t lastPrintAA = 0;
-    if (now - lastPrintAA >= 2000) {
-        lastPrintAA = now;
-        // 串口输出双通道数据
-        //Serial.printf("[DEBUG] 脉冲计数 - A: %%, B: %%\n");
-        Serial.printf(
-            "[DEBUG] A_RPM: %.0f, B_RPM: %.0f, PWMA: %d%%, PWMB: %d%%\n,校准电压: %.0fmV,原始电压: %.0fmV,ADC校准电压: %0.lumV,ADC原始数据: %0.lumV\n",
-                     currentRPM_A, currentRPM_B, pwmDuty_A, pwmDuty_B, measuredVoltage, measuredVoltageRaw,ReadMilliVolts, ReadRawVolts);
-    }
+
+    // 处理HTTP请求
     server.handleClient();
+
     // OLED屏幕超时关闭
     checkDisplayTimeout(now);
 

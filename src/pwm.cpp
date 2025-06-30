@@ -3,6 +3,7 @@
 // 全局变量定义
 volatile int pwmDuty_A = 0;  // PWM占空比
 volatile int pwmDuty_B = 0;  // PWM占空比
+volatile int pwmDuty_C = 0;  // PWM占空比
 // 初始化PWM模块
 bool pwmInit() {
     // PWM初始化
@@ -11,10 +12,12 @@ bool pwmInit() {
     // 设置PWM通道1
     ledcSetup(1, PWM_FREQ_1, 8);
     ledcAttachPin(PIN_FAN_PWM1, 1);
-    
     // 设置PWM通道2
     ledcSetup(2, PWM_FREQ_2, 8);
     ledcAttachPin(PIN_FAN_PWM2, 2);
+    // 设置PWM通道3
+    ledcSetup(3, PWM_FREQ_1, 8);
+    ledcAttachPin(PIN_FAN_PWM3, 3);
     
     updatePWMOutputs();
     Serial.println("[DEBUG] PWM输出已初始化");
@@ -27,6 +30,8 @@ void updatePWMOutputs() {
     ledcWrite(1, dutyA);
     uint32_t dutyB = pwmDuty_B * ((1 << 8) - 1) / 100;
     ledcWrite(2, dutyB);
+    uint32_t dutyC = pwmDuty_C * ((1 << 8) - 1) / 100;
+    ledcWrite(3, dutyC);
 }
 
 

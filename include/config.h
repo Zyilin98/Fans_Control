@@ -32,6 +32,7 @@ constexpr float VOLTAGE_DIVIDER_RATIO = 5.70;  // (47k + 10k) / 10k
 #define PIN_FAN_TACH_B 6   // B通道转速检测
 #define PIN_FAN_PWM1 1     // 主PWM输出
 #define PIN_FAN_PWM2 7     // 同步PWM输出
+#define PIN_FAN_PWM3 5    // 同步PWM输出
 
 // PWM配置
 constexpr uint32_t PWM_FREQ_1 = 25000;
@@ -45,8 +46,10 @@ constexpr uint32_t ROTATION_TIMEOUT_MS = 300;   // 旋转超时时间（毫秒�
 // 全局状态变量声明（在各模块中定义）
 extern volatile uint32_t pulseCountA;  // A通道脉冲计数
 extern volatile uint32_t pulseCountB;  // B通道脉冲计数
-extern volatile int pwmDuty_A;           // PWM占空比A
-extern volatile int pwmDuty_B;             // PWM占空比B
+extern volatile int pwmDuty_A;// PWM占空比A
+extern volatile int pwmDuty_B;// PWM占空比B
+extern volatile int pwmDuty_C;// PWM占空比C
+extern volatile int* pwmDuties[3]; // 指针数组
 extern int Naturewind; //自然风状态
 extern uint32_t natureWindStartTime;
 extern float natureWindPhase;  // 正弦波相位（0-2π）

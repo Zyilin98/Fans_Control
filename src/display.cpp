@@ -26,7 +26,7 @@ bool displayInit() {
 void wakeAndRefresh(float rpmA, float rpmB) {
     display.clearDisplay();
     display.setTextColor(SSD1306_WHITE);
-    
+
     // 显示通道A RPM
     display.setTextSize(1);
     display.setCursor(0, 0);
@@ -34,7 +34,7 @@ void wakeAndRefresh(float rpmA, float rpmB) {
     display.setTextSize(2);
     display.setCursor(0, 10);
     display.printf("%4d", (int)rpmA);
-    
+
     // 显示通道B RPM
     display.setTextSize(1);
     display.setCursor(64, 0);
@@ -42,45 +42,44 @@ void wakeAndRefresh(float rpmA, float rpmB) {
     display.setTextSize(2);
     display.setCursor(64, 10);
     display.printf("%4d", (int)rpmB);
-    
+
     // 分隔线
     display.drawLine(0, 35, 128, 35, SSD1306_WHITE);
-    
-    // 显示PWM值
-    if (currentChannel == 0) {
-        display.setTextSize(2);
-        display.setCursor(0, 42);
-        display.print("PWMA:");
-        display.setTextSize(2);
-        display.setCursor(56, 42);
-        display.printf("%2d", pwmDuty_A);
-    } else {
-        display.setTextSize(2);
-        display.setCursor(0, 42);
-        display.print("PWMB:");
-        display.setTextSize(2);
-        display.setCursor(56, 42);
-        display.printf("%2d", pwmDuty_B);
-    }
-    //显示模式
+
+    // 重构部分：使用数组和索引简化PWM显示逻辑
+    const char* channelLabels[] = {"PWMA:", "PWMB:", "PWMC:"};
+    const int pwmValues[] = {pwmDuty_A, pwmDuty_B, pwmDuty_C};
+
+    // 确保currentChannel在有效范围内 (0-2)
+    int channelIndex = constrain(currentChannel, 0, 2);
+
+    // 显示当前通道的PWM值
+    display.setTextSize(2);
+    display.setCursor(0, 42);
+    display.print(channelLabels[channelIndex]);
+    display.setCursor(56, 42);
+    display.printf("%2d", pwmValues[channelIndex]);
+
+    // 显示模式
     if (Naturewind) {
         display.setTextSize(1);
-        display.setCursor(SCREEN_WIDTH - 12, 2);  // 右上角位置
+        display.setCursor(SCREEN_WIDTH - 12, 2);
         display.print("N");
     }
-    //显示wifi状态
+
+    // 显示wifi状态
     if (nowifi == 0) {
         display.setTextSize(1);
-        display.setCursor(2, 56);  //左下角位置
+        display.setCursor(2, 56);
         display.print("Wifi");
     }
-    //显示ADC电压
+
+    // 显示ADC电压
     display.setTextSize(1);
-    display.setTextColor(SSD1306_WHITE);
     display.setCursor(90, 56);
     display.print(measuredVoltage, 2);
     display.print("V");
-    
+
     display.display();
 }
 
