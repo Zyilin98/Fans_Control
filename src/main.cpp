@@ -44,7 +44,7 @@ void setup() {
 
     // ADC校准
     //calibrateADC();
-
+    Serial.println("系统就绪...");
 
     // 初始化WiFi
     Serial.println("正在连接WiFi...");
