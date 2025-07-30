@@ -10,6 +10,9 @@
 #include "WiFiManager.h"
 #include "../include/http_server.h"
 
+
+extern "C" void uxTopUsedPriority(void) {}
+
 void natureWindCycle(unsigned long period = 15000, int maxVal = 80, int minVal = 20);
 uint32_t natureWindStartTime = 0;
 float natureWindPhase = 0.0;
@@ -91,9 +94,10 @@ void loop() {
 
         // 打印调试信息
         Serial.printf(
-            "[DEBUG] A_RPM: %.0f, B_RPM: %.0f, PWMA: %d%%, PWMB: %d%%\n,校准电压: %.0fmV,原始电压: %.0fmV,ADC校准电压: %0.lumV,ADC原始数据: %0.lumV\n",
-                     currentRPM_A, currentRPM_B, pwmDuty_A, pwmDuty_B, measuredVoltage, measuredVoltageRaw,ReadMilliVolts, ReadRawVolts);
-
+            "[DEBUG] A_RPM: %.0f, B_RPM: %.0f, PWMA: %d%%, PWMB: %d%%,PWMC: %d%%\n,校准电压: %.0fmV,原始电压: %0.fmV,ADC校准电压: %0.lumV,ADC原始数据: %0.lumV\n",
+                     currentRPM_A, currentRPM_B, pwmDuty_A, pwmDuty_B,pwmDuty_C, measuredVoltage, measuredVoltageRaw,ReadMilliVolts, ReadRawVolts);
+        Serial.printf("Free heap: %u bytes\n", ESP.getFreeHeap());
+        Serial.printf("Min free heap: %u bytes\n", ESP.getMinFreeHeap());
         if (displayOn) {
             wakeAndRefresh(currentRPM_A, currentRPM_B);
         }

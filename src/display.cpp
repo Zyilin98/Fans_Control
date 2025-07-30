@@ -57,7 +57,7 @@ void wakeAndRefresh(float rpmA, float rpmB) {
     display.setTextSize(2);
     display.setCursor(0, 42);
     display.print(channelLabels[channelIndex]);
-    display.setCursor(56, 42);
+    display.setCursor(60, 42);
     display.printf("%2d", pwmValues[channelIndex]);
 
     // 显示模式

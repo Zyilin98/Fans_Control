@@ -24,7 +24,7 @@ void handleRotate(int8_t rotation) {
     // 根据当前通道调整对应的PWM值
     volatile int* currentDuty = pwmDuties[currentChannel];
     int newDuty = *currentDuty + ((rotation > 0) ? 5 : -5);
-    *currentDuty = constrain(newDuty, 0, 100);
+    *currentDuty = constrain(newDuty, 0, 99);
     
     lastActivity = millis();
     
