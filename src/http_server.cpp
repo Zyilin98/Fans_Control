@@ -1,6 +1,7 @@
 #include "http_server.h"
 #include "config.h"
 #include "pwm.h"
+#include "encoder.h"
 WebServer server(80);
 
 /*
@@ -47,7 +48,7 @@ void handleRoot() {
         <div class="card shadow-sm">
           <div class="card-header">通道占空比控制</div>
           <div class="card-body">
-            <p>拖动滑块后点击“应用”设置占空比，或观察当前占空比状态：</p>
+            <p>拖动滑块即可实时设置占空比：</p>
             <div class="mb-3">
               <label for="ch1Range" class="slider-label">通道 1: <span id="duty1">0</span>%</label>
               <input type="range" class="form-range" id="ch1Range" min="0" max="100">
@@ -60,7 +61,6 @@ void handleRoot() {
               <label for="ch3Range" class="slider-label">通道 3: <span id="duty3">0</span>%</label>
               <input type="range" class="form-range" id="ch3Range" min="0" max="100">
             </div>
-            <button id="setDutyBtn" class="btn btn-primary">应用</button>
           </div>
         </div>
       </div>
@@ -76,11 +76,24 @@ void handleRoot() {
           </div>
         </div>
 
-        <!-- 运行模式卡片 -->
-        <div class="card shadow-sm">
-          <div class="card-header">运行模式</div>
-          <div class="card-body text-center">
-            <button id="naturalWindBtn" class="btn btn-outline-secondary">自然风: 加载中...</button>
+        <div class="row">
+          <div class="col-6 pe-2">
+            <!-- 运行模式卡片 -->
+            <div class="card shadow-sm h-100">
+              <div class="card-header">运行模式</div>
+              <div class="card-body text-center p-2 d-flex align-items-center justify-content-center">
+                <button id="naturalWindBtn" class="btn btn-outline-secondary btn-sm">自然风: 加载中...</button>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 ps-2">
+            <!-- 屏幕控制卡片 -->
+            <div class="card shadow-sm h-100">
+              <div class="card-header">屏幕控制</div>
+              <div class="card-body text-center p-2 d-flex align-items-center justify-content-center">
+                <button id="wakeDisplayBtn" class="btn btn-outline-secondary btn-sm">点亮屏幕</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -127,12 +140,19 @@ void handleRoot() {
     setInterval(updateWifiInfo, 5000);
     updateWifiInfo();
 
-    // 实时更新占空比
+    // 实时更新占空比 - 只更新显示，不改变用户正在操作的滑块
+    let isUserDragging = [false, false, false]; // 记录每个通道是否正在被用户拖动
+    let pendingValues = [null, null, null]; // 暂存用户设置的值
+    
     function updateDuty() {
       fetch('/duty_cycle').then(r => r.json()).then(data => {
-        document.getElementById('duty1').textContent = data.ch1;
-        document.getElementById('duty2').textContent = data.ch2;
-        document.getElementById('duty3').textContent = data.ch3;
+        // 更新显示文本
+        ['1','2','3'].forEach((i, idx) => {
+          if (!isUserDragging[idx]) { // 只有用户没有在操作时，才更新滑块值
+            document.getElementById(`ch${i}Range`).value = data[`ch${i}`];
+          }
+          document.getElementById(`duty${i}`).textContent = data[`ch${i}`];
+        });
       });
     }
     setInterval(updateDuty, 1000);
@@ -162,20 +182,47 @@ void handleRoot() {
     }
     initDuty();
 
-    // 滑块移动更新文本
-    ['ch1Range','ch2Range','ch3Range'].forEach(id => {
-      document.getElementById(id).addEventListener('input', e => {
+    // 滑块事件处理：开始拖动、拖动中、结束拖动
+    ['ch1Range','ch2Range','ch3Range'].forEach((id, idx) => {
+      const slider = document.getElementById(id);
+      
+      slider.addEventListener('input', e => {
         const ch = id.charAt(2);
         document.getElementById(`duty${ch}`).textContent = e.target.value;
       });
+      
+      slider.addEventListener('mousedown', () => {
+        isUserDragging[idx] = true;
+      });
+      
+      slider.addEventListener('touchstart', () => {
+        isUserDragging[idx] = true;
+      });
+      
+      slider.addEventListener('mouseup', () => {
+        isUserDragging[idx] = false;
+        sendDutyValue(idx + 1, slider.value);
+      });
+      
+      slider.addEventListener('touchend', () => {
+        isUserDragging[idx] = false;
+        sendDutyValue(idx + 1, slider.value);
+      });
+      
+      slider.addEventListener('mouseleave', () => {
+        if (isUserDragging[idx]) {
+          isUserDragging[idx] = false;
+          sendDutyValue(idx + 1, slider.value);
+        }
+      });
     });
-
-    // 应用占空比
-    document.getElementById('setDutyBtn').onclick = () => {
+    
+    // 发送占空比值的函数
+    function sendDutyValue(channel, value) {
       const params = new URLSearchParams();
-      ['1','2','3'].forEach(i => params.append(`ch${i}`, document.getElementById(`ch${i}Range`).value));
+      params.append(`ch${channel}`, value);
       fetch('/channel_duty_cycle?' + params);
-    };
+    }
 
     // 加载自然风状态，使用纯文本接口，0/1
     function loadNaturalStatus() {
@@ -198,6 +245,13 @@ void handleRoot() {
     // 切换自然风，保持原后端逻辑
     naturalBtn.onclick = () => {
       fetch('/natural_wind').then(() => loadNaturalStatus());
+    };
+
+    // 点亮屏幕按钮事件
+    document.getElementById('wakeDisplayBtn').onclick = () => {
+      fetch('/wake_display').then(() => {
+        console.log('屏幕已点亮');
+      });
     };
   </script>
 </body>
@@ -273,6 +327,15 @@ void handleDutyCycle() {
     server.send(200, "application/json", response);
 }
 
+// 处理点亮屏幕请求 - 模拟编码器旋转来唤醒屏幕
+void handleWakeDisplay() {
+    // 模拟编码器轻微旋转来唤醒屏幕
+    handleRotate(1); // 传入正值模拟顺时针旋转
+    delay(5); // Delay for 1000 milliseconds
+    handleRotate(-1); // 传入负值模拟逆时针旋转
+    server.send(200, "text/plain", "屏幕已点亮");
+}
+
 // 初始化 HTTP 服务器
 void setupServer() {
     server.on("/", handleRoot);
@@ -284,6 +347,7 @@ void setupServer() {
     server.on("/natural_wind_status", handleNaturalWindStatus); // 状态查询
     server.on("/heartbeat", handleHeartbeat);
     server.on("/wifi_info", handleWifiInfo);
+    server.on("/wake_display", handleWakeDisplay); // 点亮屏幕
     server.begin();
     Serial.println("HTTP 服务器已启动");
 }
