@@ -2,257 +2,138 @@
 #include "config.h"
 #include "pwm.h"
 #include "encoder.h"
+
 WebServer server(80);
 
-/*
-int getChannelSpeed(int channel) {
-    return (channel == 1) ? currentRPM_A : currentRPM_B;
+// 简化的JSON构建辅助函数
+String buildJson(String keys[], String values[], int count) {
+    String json = "{";
+    for (int i = 0; i < count; i++) {
+        if (i > 0) json += ",";
+        json += "\"" + keys[i] + "\":" + values[i];
+    }
+    json += "}";
+    return json;
 }
 
-float getCurrentVoltage() {
-    return measuredVoltage;
-}
-*/
-
-unsigned long lastHeartbeat = 0;
-bool clientConnected = false;
-
-
+// 简化的HTML页面 - 移除了内联CSS和冗余的JavaScript
 void handleRoot() {
-    // 使用 C++11 原始字符串字面量，方便编写多行 HTML
     String html = R"rawliteral(
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- 引入 Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <title>ESP32C3 FansController</title>
-  <style>
-    body { background-color: #f8f9fa; }
-    .status-badge { position: fixed; top: 1rem; right: 1rem; padding: .5rem 1rem; border-radius: .25rem; color: #fff; }
-    .slider-label { font-weight: 500; }
-  </style>
+  <title>ESP32C3 Fanscontrol</title>
+  <style>body{background:#f8f9fa}.status-badge{position:fixed;top:1rem;right:1rem;padding:.5rem 1rem;border-radius:.25rem;color:#fff}</style>
 </head>
 <body>
   <div class="container py-4">
-    <h1 class="text-center mb-4">ESP32C3 FansController</h1>
-
-    <!-- 状态指示条 -->
-    <span id="connection-status" class="status-badge bg-secondary">连接状态: 未连接</span>
-
+    <h1 class="text-center mb-4">ESP32C3 Fanscontrol</h1>
+    <span id="status" class="status-badge bg-secondary">连接状态: 未连接</span>
+    
     <div class="row gy-4">
-      <!-- 占空比控制卡片 -->
       <div class="col-md-6">
-        <div class="card shadow-sm">
-          <div class="card-header">通道占空比控制</div>
+        <div class="card shadow-sm h-100">
+          <div class="card-header">通道控制</div>
           <div class="card-body">
-            <p>拖动滑块即可实时设置占空比：</p>
-            <div class="mb-3">
-              <label for="ch1Range" class="slider-label">通道 1: <span id="duty1">0</span>%</label>
-              <input type="range" class="form-range" id="ch1Range" min="0" max="100">
-            </div>
-            <div class="mb-3">
-              <label for="ch2Range" class="slider-label">通道 2: <span id="duty2">0</span>%</label>
-              <input type="range" class="form-range" id="ch2Range" min="0" max="100">
-            </div>
-            <div class="mb-3">
-              <label for="ch3Range" class="slider-label">通道 3: <span id="duty3">0</span>%</label>
-              <input type="range" class="form-range" id="ch3Range" min="0" max="100">
-            </div>
+            <div class="mb-3"><label>通道1: <span id="d1">0</span>%</label><input type="range" class="form-range" id="c1" min="0" max="100"></div>
+            <div class="mb-3"><label>通道2: <span id="d2">0</span>%</label><input type="range" class="form-range" id="c2" min="0" max="100"></div>
+            <div class="mb-3"><label>通道3: <span id="d3">0</span>%</label><input type="range" class="form-range" id="c3" min="0" max="100"></div>
           </div>
         </div>
       </div>
-
-      <!-- 转速及电压信息卡片 -->
-      <div class="col-md-6">
-        <div class="card shadow-sm mb-4">
-          <div class="card-header">实时数据</div>
-          <div class="card-body">
-            <p>通道 1 转速: <strong><span id="rpm1">0</span> RPM</strong></p>
-            <p>通道 2 转速: <strong><span id="rpm2">0</span> RPM</strong></p>
-            <p>电压: <strong><span id="voltage">0.00</span> V</strong></p>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="col-6 pe-2">
-            <!-- 运行模式卡片 -->
-            <div class="card shadow-sm h-100">
-              <div class="card-header">运行模式</div>
-              <div class="card-body text-center p-2 d-flex align-items-center justify-content-center">
-                <button id="naturalWindBtn" class="btn btn-outline-secondary btn-sm">自然风: 加载中...</button>
-              </div>
+       
+       <div class="col-md-6 d-flex flex-column">
+         <div class="card shadow-sm mb-3 flex-grow-1">
+            <div class="card-header">实时数据</div>
+            <div class="card-body">
+              <p>通道1: <strong><span id="r1">0</span> RPM</strong></p>
+              <p>通道2: <strong><span id="r2">0</span> RPM</strong></p>
+              <p>电压: <strong><span id="v">0.00</span> V</strong></p>
             </div>
           </div>
-          <div class="col-6 ps-2">
-            <!-- 屏幕控制卡片 -->
-            <div class="card shadow-sm h-100">
-              <div class="card-header">屏幕控制</div>
-              <div class="card-body text-center p-2 d-flex align-items-center justify-content-center">
-                <button id="wakeDisplayBtn" class="btn btn-outline-secondary btn-sm">点亮屏幕</button>
-              </div>
-            </div>
+          
+          <div class="row" style="flex: 1;">
+            <div class="col-6"><div class="card shadow-sm h-100"><div class="card-header">自然风模式</div><div class="card-body d-flex align-items-center justify-content-center"><button id="nw" class="btn btn-sm btn-outline-secondary">加载中...</button></div></div></div>
+            <div class="col-6"><div class="card shadow-sm h-100"><div class="card-header">屏幕状态</div><div class="card-body d-flex align-items-center justify-content-center"><button id="wd" class="btn btn-sm btn-outline-secondary">点亮屏幕</button></div></div></div>
           </div>
-        </div>
       </div>
     </div>
-
-    <!-- WiFi 信息卡片 -->
+    
     <div class="card shadow-sm mt-4">
-      <div class="card-header">WiFi 信息</div>
+      <div class="card-header">WiFi信息</div>
       <div class="card-body d-flex justify-content-between">
-        <div>SSID: <span id="wifi-ssid">获取中...</span></div>
-        <div>IP: <span id="wifi-ip">获取中...</span></div>
-        <div>RSSI: <span id="wifi-rssi">获取中...</span> dBm</div>
+        <div>SSID: <span id="w1">-</span></div>
+        <div>IP: <span id="w2">-</span></div>
+        <div>RSSI: <span id="w3">-</span>dBm</div>
       </div>
     </div>
   </div>
-
-  <!-- 引入 Bootstrap JS 和主逻辑脚本 -->
+  
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    let missedBeats = 0;
-    let naturalWindOn = false;
-
-    // 心跳检测
-    function checkHeartbeat() {
-      fetch('/heartbeat')
-        .then(() => { missedBeats = 0; updateStatus(true); })
-        .catch(() => { if (++missedBeats >= 5) updateStatus(false); });
-    }
-    function updateStatus(connected) {
-      const badge = document.getElementById('connection-status');
-      badge.textContent = connected ? '连接状态: 已连接' : '连接状态: 未连接';
-      badge.className = 'status-badge ' + (connected ? 'bg-success' : 'bg-danger');
-    }
-    setInterval(checkHeartbeat, 1000);
-
-    // 更新 WiFi 信息
-    function updateWifiInfo() {
-      fetch('/wifi_info').then(r => r.json()).then(data => {
-        document.getElementById('wifi-ssid').textContent = data.ssid;
-        document.getElementById('wifi-ip').textContent = data.ip;
-        document.getElementById('wifi-rssi').textContent = data.rssi;
-      });
-    }
-    setInterval(updateWifiInfo, 5000);
-    updateWifiInfo();
-
-    // 实时更新占空比 - 只更新显示，不改变用户正在操作的滑块
-    let isUserDragging = [false, false, false]; // 记录每个通道是否正在被用户拖动
-    let pendingValues = [null, null, null]; // 暂存用户设置的值
+    const $ = id => document.getElementById(id);
+    const channels = [1,2,3];
+    let dragging = [false,false,false];
+    let naturalOn = false;
     
-    function updateDuty() {
-      fetch('/duty_cycle').then(r => r.json()).then(data => {
-        // 更新显示文本
-        ['1','2','3'].forEach((i, idx) => {
-          if (!isUserDragging[idx]) { // 只有用户没有在操作时，才更新滑块值
-            document.getElementById(`ch${i}Range`).value = data[`ch${i}`];
-          }
-          document.getElementById(`duty${i}`).textContent = data[`ch${i}`];
-        });
+    // 通用获取函数
+    const get = (url, fn) => fetch(url).then(r => r.json()).then(fn);
+    const post = (url, params) => fetch(url + '?' + new URLSearchParams(params));
+    
+    // 状态更新
+    setInterval(() => fetch('/heartbeat').then(() => {
+      $('status').textContent = '连接状态: 已连接';
+      $('status').className = 'status-badge bg-success';
+    }).catch(() => {
+      $('status').textContent = '连接状态: 未连接';
+      $('status').className = 'status-badge bg-danger';
+    }), 1000);
+    
+    // WiFi信息
+    setInterval(() => get('/wifi_info', d => {
+      $('w1').textContent = d.ssid;
+      $('w2').textContent = d.ip;
+      $('w3').textContent = d.rssi;
+    }), 5000);
+    
+    // 占空比和实时数据
+    setInterval(() => {
+      get('/duty_cycle', d => channels.forEach(i => {
+        if(!dragging[i-1]) $('c'+i).value = d['ch'+i];
+        $('d'+i).textContent = d['ch'+i];
+      }));
+      get('/speed', d => {
+        $('r1').textContent = d.ch1.toFixed(0);
+        $('r2').textContent = d.ch2.toFixed(0);
       });
-    }
-    setInterval(updateDuty, 1000);
-    updateDuty();
-
-    // 实时更新转速、电压
-    function updateData() {
-      fetch('/speed').then(r => r.json()).then(data => {
-        document.getElementById('rpm1').textContent = data.ch1.toFixed(0);
-        document.getElementById('rpm2').textContent = data.ch2.toFixed(0);
-      });
-      fetch('/voltage').then(r => r.json()).then(data => {
-        document.getElementById('voltage').textContent = data.voltage.toFixed(2);
-      });
-    }
-    setInterval(updateData, 1000);
-    updateData();
-
-    // 初始化滑块与文本
-    function initDuty() {
-      fetch('/duty_cycle').then(r => r.json()).then(data => {
-        ['1','2','3'].forEach(i => {
-          document.getElementById(`ch${i}Range`).value = data[`ch${i}`];
-          document.getElementById(`duty${i}`).textContent = data[`ch${i}`];
-        });
-      });
-    }
-    initDuty();
-
-    // 滑块事件处理：开始拖动、拖动中、结束拖动
-    ['ch1Range','ch2Range','ch3Range'].forEach((id, idx) => {
-      const slider = document.getElementById(id);
-      
-      slider.addEventListener('input', e => {
-        const ch = id.charAt(2);
-        document.getElementById(`duty${ch}`).textContent = e.target.value;
-      });
-      
-      slider.addEventListener('mousedown', () => {
-        isUserDragging[idx] = true;
-      });
-      
-      slider.addEventListener('touchstart', () => {
-        isUserDragging[idx] = true;
-      });
-      
-      slider.addEventListener('mouseup', () => {
-        isUserDragging[idx] = false;
-        sendDutyValue(idx + 1, slider.value);
-      });
-      
-      slider.addEventListener('touchend', () => {
-        isUserDragging[idx] = false;
-        sendDutyValue(idx + 1, slider.value);
-      });
-      
-      slider.addEventListener('mouseleave', () => {
-        if (isUserDragging[idx]) {
-          isUserDragging[idx] = false;
-          sendDutyValue(idx + 1, slider.value);
-        }
-      });
+      get('/voltage', d => $('v').textContent = d.voltage.toFixed(2));
+    }, 1000);
+    
+    // 滑块事件
+    channels.forEach(i => {
+      const s = $('c'+i);
+      s.oninput = e => $('d'+i).textContent = e.target.value;
+      s.onmousedown = s.ontouchstart = () => dragging[i-1] = true;
+      s.onmouseup = s.ontouchend = () => {
+        dragging[i-1] = false;
+        post('/channel_duty_cycle', {['ch'+i]: s.value});
+      };
     });
     
-    // 发送占空比值的函数
-    function sendDutyValue(channel, value) {
-      const params = new URLSearchParams();
-      params.append(`ch${channel}`, value);
-      fetch('/channel_duty_cycle?' + params);
-    }
-
-    // 加载自然风状态，使用纯文本接口，0/1
-    function loadNaturalStatus() {
-      fetch('/natural_wind_status')
-        .then(r => r.text())
-        .then(t => {
-          naturalWindOn = t.trim() === '1';
-          refreshNaturalBtn();
-        });
-    }
-    loadNaturalStatus();
-
-    // 刷新按钮显示
-    const naturalBtn = document.getElementById('naturalWindBtn');
-    function refreshNaturalBtn() {
-      naturalBtn.textContent = `自然风: ${naturalWindOn ? '已开启' : '已关闭'}`;
-      naturalBtn.className = `btn ${naturalWindOn ? 'btn-success' : 'btn-outline-secondary'}`;
-    }
-
-    // 切换自然风，保持原后端逻辑
-    naturalBtn.onclick = () => {
-      fetch('/natural_wind').then(() => loadNaturalStatus());
-    };
-
-    // 点亮屏幕按钮事件
-    document.getElementById('wakeDisplayBtn').onclick = () => {
-      fetch('/wake_display').then(() => {
-        console.log('屏幕已点亮');
-      });
-    };
+    // 自然风
+    const loadNatural = () => fetch('/natural_wind_status').then(r => r.text()).then(t => {
+      naturalOn = t.trim() === '1';
+      $('nw').textContent = naturalOn ? '已开启' : '已关闭';
+      $('nw').className = 'btn btn-sm ' + (naturalOn ? 'btn-success' : 'btn-outline-secondary');
+    });
+    $('nw').onclick = () => fetch('/natural_wind').then(loadNatural);
+    loadNatural();
+    
+    // 点亮屏幕
+    $('wd').onclick = () => fetch('/wake_display');
   </script>
 </body>
 </html>
@@ -260,61 +141,56 @@ void handleRoot() {
     server.send(200, "text/html; charset=utf-8", html);
 }
 
-
-// 处理客户端断开连接
+// 简化的处理函数
 void handleHeartbeat() {
-  lastHeartbeat = millis();
-  clientConnected = true;
-  server.send(200, "text/plain", "alive");
+    server.send(200, "text/plain", "alive");
 }
 
 void handleWifiInfo() {
-  String json = "{";
-  json += "\"ssid\":\"" + WiFi.SSID() + "\",";
-  json += "\"ip\":\"" + WiFi.localIP().toString() + "\",";
-  json += "\"rssi\":" + String(WiFi.RSSI());
-  json += "}";
-  server.send(200, "application/json", json);
+    String keys[] = {"ssid", "ip", "rssi"};
+    String values[] = {"\"" + WiFi.SSID() + "\"", 
+                      "\"" + WiFi.localIP().toString() + "\"", 
+                      String(WiFi.RSSI())};
+    server.send(200, "application/json", buildJson(keys, values, 3));
 }
 
-
-// 处理通道占空比设置请求
 void handleChannelDutyCycle() {
     if (server.hasArg("ch1")) {
-        int ch1Duty = server.arg("ch1").toInt();
-        pwmDuty_A = constrain(ch1Duty, 0, 100);
-        updatePWMOutputs(); // 使用统一的更新函数
+        pwmDuty_A = constrain(server.arg("ch1").toInt(), 0, 100);
+        updatePWMOutputs();
     }
     if (server.hasArg("ch2")) {
-        int ch2Duty = server.arg("ch2").toInt();
-        pwmDuty_B = constrain(ch2Duty, 0, 100);
-        updatePWMOutputs(); // 使用统一的更新函数
+        pwmDuty_B = constrain(server.arg("ch2").toInt(), 0, 100);
+        updatePWMOutputs();
     }
     if (server.hasArg("ch3")) {
-        int ch3Duty = server.arg("ch3").toInt();
-        pwmDuty_C = constrain(ch3Duty, 0, 100);
-        updatePWMOutputs(); // 使用统一的更新函数
+        pwmDuty_C = constrain(server.arg("ch3").toInt(), 0, 100);
+        updatePWMOutputs();
     }
     server.sendHeader("Location", "/", true);
     server.send(302, "text/plain", "");
 }
 
-// 处理获取通道转速请求（示例）
 void handleSpeed() {
-        String response = "{\"ch1\": " + String(currentRPM_A) + ", \"ch2\": " + String(currentRPM_B) + "}";
-        server.send(200, "application/json; charset=utf-8", response); // 添加charset
+    String keys[] = {"ch1", "ch2"};
+    String values[] = {String(currentRPM_A), String(currentRPM_B)};
+    server.send(200, "application/json", buildJson(keys, values, 2));
 }
 
-// 处理获取当前电压请求（示例）
 void handleVoltage() {
-    String response = "{\"voltage\": " + String(measuredVoltage, 2) + "}";
-    server.send(200, "application/json; charset=utf-8", response); // 添加charset
+    String response = "{\"voltage\":" + String(measuredVoltage, 2) + "}";
+    server.send(200, "application/json", response);
 }
 
-// 处理自然风功能控制请求
+void handleDutyCycle() {
+    String keys[] = {"ch1", "ch2", "ch3"};
+    String values[] = {String(pwmDuty_A), String(pwmDuty_B), String(pwmDuty_C)};
+    server.send(200, "application/json", buildJson(keys, values, 3));
+}
+
 void handleNaturalWind() {
     Naturewind = !Naturewind;
-    server.sendHeader("location", "/", true);
+    server.sendHeader("Location", "/", true);
     server.send(302, "text/plain", "");
 }
 
@@ -322,21 +198,14 @@ void handleNaturalWindStatus() {
     server.send(200, "text/plain", String(Naturewind));
 }
 
-void handleDutyCycle() {
-    String response = "{\"ch1\": " + String(pwmDuty_A) + ", \"ch2\": " + String(pwmDuty_B) + ", \"ch3\": " + String(pwmDuty_C) + "}";
-    server.send(200, "application/json", response);
-}
-
-// 处理点亮屏幕请求 - 模拟编码器旋转来唤醒屏幕
 void handleWakeDisplay() {
-    // 模拟编码器轻微旋转来唤醒屏幕
-    handleRotate(1); // 传入正值模拟顺时针旋转
-    delay(5); // Delay for 1000 milliseconds
-    handleRotate(-1); // 传入负值模拟逆时针旋转
-    server.send(200, "text/plain", "屏幕已点亮");
+    handleRotate(1);
+    delay(5);
+    handleRotate(-1);
+    server.send(200, "text/plain", "OK");
 }
 
-// 初始化 HTTP 服务器
+// 简化的服务器初始化
 void setupServer() {
     server.on("/", handleRoot);
     server.on("/duty_cycle", handleDutyCycle);
@@ -344,10 +213,10 @@ void setupServer() {
     server.on("/speed", handleSpeed);
     server.on("/voltage", handleVoltage);
     server.on("/natural_wind", handleNaturalWind);
-    server.on("/natural_wind_status", handleNaturalWindStatus); // 状态查询
+    server.on("/natural_wind_status", handleNaturalWindStatus);
     server.on("/heartbeat", handleHeartbeat);
     server.on("/wifi_info", handleWifiInfo);
-    server.on("/wake_display", handleWakeDisplay); // 点亮屏幕
+    server.on("/wake_display", handleWakeDisplay);
     server.begin();
-    Serial.println("HTTP 服务器已启动");
+    Serial.println("HTTP服务器已启动");
 }
