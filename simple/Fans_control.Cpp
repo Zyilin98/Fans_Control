@@ -3,8 +3,8 @@
 #include <Adafruit_SSD1306.h>  // 包含 Adafruit SSD1306 库，用于控制 OLED 显示屏
 
 // === 配置区 ===
-#define I2C_SDA_PIN 8  // 定义 I2C 通信的 SDA 引脚为 8 号引脚
-#define I2C_SCL_PIN 9  // 定义 I2C 通信的 SCL 引脚为 9 号引脚
+#define I2C_SDA_PIN 9  // 定义 I2C 通信的 SDA 引脚为 8 号引脚
+#define I2C_SCL_PIN 8  // 定义 I2C 通信的 SCL 引脚为 9 号引脚
 
 #define SCREEN_WIDTH 128  // 定义 OLED 显示屏的宽度为 128 像素
 #define SCREEN_HEIGHT 64  // 定义 OLED 显示屏的高度为 64 像素

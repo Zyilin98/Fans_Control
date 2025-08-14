@@ -38,9 +38,9 @@ void handleRoot() {
         <div class="card shadow-sm h-100">
           <div class="card-header">通道控制</div>
           <div class="card-body">
-            <div class="mb-3"><label>通道1: <span id="d1">0</span>%</label><input type="range" class="form-range" id="c1" min="0" max="100"></div>
-            <div class="mb-3"><label>通道2: <span id="d2">0</span>%</label><input type="range" class="form-range" id="c2" min="0" max="100"></div>
-            <div class="mb-3"><label>通道3: <span id="d3">0</span>%</label><input type="range" class="form-range" id="c3" min="0" max="100"></div>
+            <div class="mb-3"><label>通道1: <span id="d1">0</span>%</label><input type="range" class="form-range" id="c1" min="0" max="99"></div>
+            <div class="mb-3"><label>通道2: <span id="d2">0</span>%</label><input type="range" class="form-range" id="c2" min="0" max="99"></div>
+            <div class="mb-3"><label>通道3: <span id="d3">0</span>%</label><input type="range" class="form-range" id="c3" min="0" max="99"></div>
           </div>
         </div>
       </div>
@@ -156,15 +156,15 @@ void handleWifiInfo() {
 
 void handleChannelDutyCycle() {
     if (server.hasArg("ch1")) {
-        pwmDuty_A = constrain(server.arg("ch1").toInt(), 0, 100);
+        pwmDuty_A = constrain(server.arg("ch1").toInt(), 0, 99);
         updatePWMOutputs();
     }
     if (server.hasArg("ch2")) {
-        pwmDuty_B = constrain(server.arg("ch2").toInt(), 0, 100);
+        pwmDuty_B = constrain(server.arg("ch2").toInt(), 0, 99);
         updatePWMOutputs();
     }
     if (server.hasArg("ch3")) {
-        pwmDuty_C = constrain(server.arg("ch3").toInt(), 0, 100);
+        pwmDuty_C = constrain(server.arg("ch3").toInt(), 0, 99);
         updatePWMOutputs();
     }
     server.sendHeader("Location", "/", true);
@@ -200,7 +200,7 @@ void handleNaturalWindStatus() {
 
 void handleWakeDisplay() {
     handleRotate(1);
-    delay(5);
+    delay(2);
     handleRotate(-1);
     server.send(200, "text/plain", "OK");
 }

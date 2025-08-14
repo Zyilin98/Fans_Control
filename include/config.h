@@ -6,15 +6,15 @@
 // === 引脚定义 ===
 // ADC引脚
 #define ADC_PIN 0          // GPIO0 用作 ADC
-#define ADC_MAX_READING 4095.0
+#define ADC_MAX_READING 4096.0
 #define ADC_REF_VOLTAGE 2500.0  // ESP32-C3 ADC 满量程电压
 
 // 电压分压比例
-constexpr float VOLTAGE_DIVIDER_RATIO = 5.70;  // (47k + 10k) / 10k
+constexpr float VOLTAGE_DIVIDER_RATIO = 5.60;  // (47k + 10k) / 10k
 
 // I2C引脚
-#define I2C_SDA_PIN 3
-#define I2C_SCL_PIN 4
+#define I2C_SDA_PIN 4
+#define I2C_SCL_PIN 3
 
 // OLED显示屏配置
 #define SCREEN_WIDTH 128

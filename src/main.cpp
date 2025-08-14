@@ -8,7 +8,7 @@
 #include "uart.h"
 #include "display.h"
 #include "WiFiManager.h"
-#include "../include/http_server.h"
+#include "http_server.h"
 
 
 extern "C" void uxTopUsedPriority(void) {}
@@ -23,7 +23,29 @@ void setup() {
 
     // 初始化串口
     uartInit();
+
+    // 初始化WiFi
+    Serial.println("正在连接WiFi...");
     
+    // 配网过程中设置所有GPIO为低电平
+    pinMode(PIN_FAN_PWM1, OUTPUT);
+    pinMode(PIN_FAN_PWM2, OUTPUT);
+    pinMode(PIN_FAN_PWM3, OUTPUT);
+    digitalWrite(PIN_FAN_PWM1, LOW);
+    digitalWrite(PIN_FAN_PWM2, LOW);
+    digitalWrite(PIN_FAN_PWM3, LOW);
+    wm.setConfigPortalTimeout(120); // 设置120秒超时
+    // 自动连接，若未保存过 WiFi 信息则进入配网模式
+    bool res = wm.autoConnect("EspFansControl"); // 可自定义AP名
+
+    if (!res) {
+        Serial.println("WiFiManager: 配网失败或超时，继续运行程序...");
+        nowifi = 1; // 未连接网络
+    } else {
+        Serial.println("WiFiManager: 已连接到WiFi，网络信息已保存。");
+        nowifi = 0; // 已连接网络
+        setupServer();
+    }
     // 初始化ADC
     adcInit();
 
@@ -32,13 +54,13 @@ void setup() {
         Serial.println("显示模块初始化失败");
         while(1);
     }
-    
+
     // 初始化旋转编码器
     encoderInit();
-    
+
     // 初始化转速检测
     tachInit();
-    
+
     // 初始化PWM
     if (!pwmInit()) {
         Serial.println("PWM初始化失败");
@@ -48,23 +70,6 @@ void setup() {
     // ADC校准
     //calibrateADC();
     Serial.println("系统就绪...");
-
-    // 初始化WiFi
-    Serial.println("正在连接WiFi...");
-    wm.setConfigPortalTimeout(300);
-    // 自动连接，若未保存过 WiFi 信息则进入配网模式
-    bool res = wm.autoConnect("EspFansControl"); // 可自定义AP名
-
-    if (!res) {
-        Serial.println("WiFiManager: 配网失败或超时，重启设备再试一次...");
-        delay(1000);
-        ESP.restart();
-        delay(2000); // 等待重启
-    } else {
-        Serial.println("WiFiManager: 已连接到WiFi，网络信息已保存。");
-        nowifi = 0; // 已连接网络
-        setupServer();
-    }
 
     // 显示欢迎信息
     lastActivity = millis();

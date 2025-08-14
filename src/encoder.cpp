@@ -44,11 +44,16 @@ void handlePressRelease() {
     if (currentChannel > 2) {
         currentChannel = 0;
     }
-
+    handleRotate(1);
+    delay(2);
+    handleRotate(-1);
 }
 void handleLongPressRelease() {
     Serial.println("[Debug] 切换自然风");
     Naturewind ^= 1;
+    handleRotate(1);
+    delay(2);
+    handleRotate(-1);
 }
 // 初始化旋转编码器模块
 void encoderInit() {
