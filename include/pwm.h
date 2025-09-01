@@ -4,7 +4,7 @@
 #include "config.h"
 
 // 初始化PWM模块
-bool pwmInit();
+void pwmInit();
 
 // 更新PWM输出
 void updatePWMOutputs();

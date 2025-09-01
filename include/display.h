@@ -4,9 +4,10 @@
 #include "config.h"
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <Wire.h>
 
 // 初始化显示模块
-bool displayInit();
+void displayInit();
 
 // 刷新显示内容
 void wakeAndRefresh(float rpmA, float rpmB);

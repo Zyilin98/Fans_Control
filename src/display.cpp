@@ -1,5 +1,4 @@
 #include "display.h"
-#include <Wire.h>
 
 // 全局变量定义
 bool displayOn = true;
@@ -9,17 +8,19 @@ uint32_t lastActivity = 0;
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // 初始化显示模块
-bool displayInit() {
+void displayInit() {
     // OLED初始化
     Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
-    if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS)) {
-        Serial.println("OLED初始化失败");
-        return false;
-    }
+    display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS);
     display.clearDisplay();
     display.display();
     Serial.println("OLED显示屏初始化完成");
-    return true;
+    // 显示通道A RPM
+    display.clearDisplay();
+    display.setTextSize(2);
+    display.setCursor(2, 2);
+    display.print("System Starting.....");
+    display.display();
 }
 
 // OLED显示刷新函数（双通道版本）

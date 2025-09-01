@@ -6,7 +6,6 @@
 #include "adc.h"
 #include "encoder.h"
 #include "uart.h"
-#include "display.h"
 #include "WiFiManager.h"
 #include "http_server.h"
 
@@ -23,6 +22,9 @@ void setup() {
 
     // 初始化串口
     uartInit();
+
+    // 初始化显示
+    displayInit();
 
     // 初始化WiFi
     Serial.println("正在连接WiFi...");
@@ -49,12 +51,6 @@ void setup() {
     // 初始化ADC
     adcInit();
 
-    // 初始化显示模块
-    if (!displayInit()) {
-        Serial.println("显示模块初始化失败");
-        while(1);
-    }
-
     // 初始化旋转编码器
     encoderInit();
 
@@ -62,13 +58,10 @@ void setup() {
     tachInit();
 
     // 初始化PWM
-    if (!pwmInit()) {
-        Serial.println("PWM初始化失败");
-        while(1);
-    }
+    pwmInit();
 
-    // ADC校准
-    //calibrateADC();
+    //ADC校准
+    calibrateADC();
     Serial.println("系统就绪...");
 
     // 显示欢迎信息

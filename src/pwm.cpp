@@ -5,7 +5,7 @@ volatile int pwmDuty_A = 0;  // PWM占空比
 volatile int pwmDuty_B = 0;  // PWM占空比
 volatile int pwmDuty_C = 0;  // PWM占空比
 // 初始化PWM模块
-bool pwmInit() {
+void pwmInit() {
     // PWM初始化
     // 使用ledcSetup和ledcAttachPin替代ledcAttach
     
@@ -21,7 +21,6 @@ bool pwmInit() {
     
     updatePWMOutputs();
     Serial.println("[DEBUG] PWM输出已初始化");
-    return true;
 }
 
 // 更新PWM输出（同步两个引脚）
